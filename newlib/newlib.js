@@ -454,11 +454,9 @@ gbs.Parser.prototype.advance = function (id) {
 gbs.Parser.prototype.constant = function (symbol, alias, value, type) {
     var x = this.symbol(symbol);
     var self = this;
-    var node = new gbs.node.Constant(alias, value, type);
     x.nud = function () {
-        return node;
+        return new gbs.node.Constant(x, alias, value, type);
     };
-    x.sarasa = 123;
     x.value = value;
     return x;
 };
@@ -654,68 +652,140 @@ defineBinaryOperation('GraterOperation');
 defineBinaryOperation('LessEqualOperation');
 defineBinaryOperation('GreaterEqualOperation');
 
-gbs.node.NumericLiteral = function (value) {
+gbs.node.Variable = function (node, id) {
+    this.prototype = node;
+    this.id = id;
+};
+
+gbs.node.NumericLiteral = function (node, value) {
+    this.prototype = node;
     this.value = value;
     this.type = TOKEN_NAMES.NUMBER;
 };
 gbs.node.NumericLiteral.prototype.type = 'number';
 
-gbs.node.Constant = function (alias, value, type) {
+gbs.node.Constant = function (node, alias, value, type) {
+    this.prototype = node;
     this.value = value;
     this.alias = alias;
     this.type = type;
 };
 
-gbs.node.ProcedureCall = function (node, declarationProvider, parameters) {
-    this.arity = 'routine';
-    this.alias = 'ProcedureCall';
-    this.name = node.value;
-    this.node = node;
-    this.parameters = parameters;
-    this.declarationProvider = declarationProvider;
-};
-
 gbs.node.MoveClaw = function (node, parameters) {
+    this.prototype = node;
     this.arity = STM;
     this.name = 'MoveClaw';
     this.parameters = parameters;
 };
 
 gbs.node.RemoveStone = function (node, parameters) {
+    this.prototype = node;
     this.arity = STM;
     this.name = 'RemoveStone';
     this.parameters = parameters;
 };
 
 gbs.node.PutStone = function (node, parameters) {
+    this.prototype = node;
     this.arity = STM;
     this.name = 'PutStone';
     this.parameters = parameters;
 };
 
-gbs.node.Boom = function () {
+gbs.node.Boom = function (node) {
+    this.prototype = node;
     this.arity = STM;
     this.name = 'BOOM';
 };
 
 gbs.node.HasStones = function (node, parameters) {
+    this.prototype = node;
     this.arity = EXPRESSION;
     this.name = 'hasStones';
     this.parameters = parameters;
 };
 
 gbs.node.CanMove = function (node, parameters) {
+    this.prototype = node;
     this.arity = EXPRESSION;
     this.name = 'canMove';
     this.parameters = parameters;
 };
 
-gbs.node.Assignment = function (left, right) {
+gbs.node.Assignment = function (node, left, right) {
+    this.prototype = node;
     this.arity = STM;
     this.alias = ':=';
     this.left = left;
     this.right = right;
 };
+
+gbs.node.If = function (node, condition, trueBranch, falseBranch) {
+    this.prototype = node;
+    this.condition = condition;
+    this.trueBranch = trueBranch;
+    this.falseBranch = falseBranch;
+};
+
+gbs.node.Switch = function (node, expression, cases) {
+    this.prototype = node;
+    this.expression = expression;
+    this.cases = cases;
+};
+
+gbs.node.While = function (node, expression, body) {
+    this.prototype = node;
+    this.expression = expression;
+    this.body = body;
+};
+
+gbs.node.Repeat = function (node, expression, body) {
+    this.prototype = node;
+    this.expression = expression;
+    this.body = body;
+};
+
+gbs.node.Program = function (node, body) {
+    this.prototype = node;
+    this.body = body;
+};
+
+gbs.node.ProcedureCall = function (node, declarationProvider, parameters) {
+    this.prototype = node;
+    this.arity = 'routine';
+    this.alias = 'ProcedureCall';
+    this.name = node.value;
+    this.parameters = parameters;
+    this.declarationProvider = declarationProvider;
+};
+
+gbs.node.FunctionCall = function (node, declarationProvider, parameters) {
+    this.prototype = node;
+    this.arity = 'routine';
+    this.alias = 'FunctionCall';
+    this.name = node.value;
+    this.parameters = parameters;
+    this.declarationProvider = declarationProvider;
+};
+
+gbs.node.ProcedureDeclaration = function (node, parameters, body) {
+    this.prototype = node;
+    this.name = node.value;
+    this.arity = 'routine';
+    this.alias = 'procedureDeclaration';
+    this.parameters = parameters;
+    this.body = body;
+};
+
+gbs.node.FunctionDeclaration = function (node, parameters, body, returnExpression) {
+    this.name = node.value;
+    this.arity = 'routine';
+    this.alias = 'functionDeclaration';
+    this.parameters = parameters;
+    this.body = body;
+    this.return = returnExpression;
+};
+
 
 /**********************************************************************************************************************/
 /************************************************ GRAMMAR *************************************************************/
@@ -733,6 +803,26 @@ function parameterListCall(parser) {
         }
     }
     parser.advance(')');
+    return parameters;
+}
+
+function parameterDeclarationList() {
+    var parameters = [];
+    g.advance('(');
+    if (g.token.id !== ')') {
+        for (; ;) {
+            if (g.token.arity !== 'name') {
+                g.error(g.token, 'Se esperaba un nombre de parámetro.');
+            }
+            parameters.push(g.token);
+            g.advance();
+            if (g.token.id !== ',') {
+                break;
+            }
+            g.advance(',');
+        }
+    }
+    g.advance(')');
     return parameters;
 }
 
@@ -754,6 +844,13 @@ gbs.Grammar = function () {
 var g = new gbs.Parser(new Lexer());
 var define = g;
 define.symbol('(end)');
+define.symbol('(literal)').nud = function () {
+    return new gbs.node.Variable(this, this.value);
+};
+
+define.symbol('(name)').nud = function () {
+    return new gbs.node.NumericLiteral(this, this.value);
+};
 
 define.op('+', 50, gbs.node.SumOperation);
 define.op('-', 50, gbs.node.DiffOperation);
@@ -823,15 +920,15 @@ define.infixr(':=', 10, function (left) {
 });
 
 define.stmt(n.PUT, function () {
-    return new gbs.node.PutStone(parameterListCall(g));
+    return new gbs.node.PutStone(g.token, parameterListCall(g));
 });
 
 define.stmt(n.REMOVE, function () {
-    return new gbs.node.RemoveStone(parameterListCall(g));
+    return new gbs.node.RemoveStone(g.token, parameterListCall(g));
 });
 
 define.stmt(n.MOVE, function () {
-    return new gbs.node.MoveClaw(parameterListCall(g));
+    return new gbs.node.MoveClaw(g.token, parameterListCall(g));
 });
 
 define.stmt(n.BOOM, function () {
@@ -843,11 +940,130 @@ define.stmt(n.BOOM, function () {
 });
 
 define.prefix(n.HAS_STONES, function () {
-    return new gbs.node.HasStones(parameterListCall(g));
+    return new gbs.node.HasStones(g.token, parameterListCall(g));
 });
 
 define.prefix(n.CAN_MOVE, function () {
-    return new gbs.node.CanMove(parameterListCall(g));
+    return new gbs.node.CanMove(g.token, parameterListCall(g));
+});
+
+define.stmt(n.IF, function () {
+    var token = g.token;
+    g.advance('(');
+    var condition = g.expression(0);
+    g.advance(')');
+    var trueBranch = bodyStatement();
+    var falseBranch = null;
+    if (g.token.id === n.ELSE) {
+        g.scope.reserve(g.token);
+        g.advance(n.ELSE);
+        falseBranch = bodyStatement();
+    }
+    return new gbs.node.If(token, condition, trueBranch, falseBranch);
+});
+
+define.stmt(n.SWITCH, function () {
+    var token = g.token;
+    var condition = parenthesisExpression();
+    if (g.token.id === n.TO) {
+        g.advance(n.TO);
+    }
+    g.advance('{');
+    var cases = [];
+    for (; ;) {
+        var exp = g.expression(0);
+        g.advance('->');
+        var body = bodyStatement();
+        cases.push({
+            case: exp,
+            body: body
+        });
+        if (g.token.id === '}' || !g.tokens.hasNext()) {
+            break;
+        }
+    }
+    g.advance('}');
+    return new gbs.node.Switch(token, condition, cases);
+});
+
+define.stmt(n.WHILE, function () {
+    return new gbs.node.While(g.token, parenthesisExpression(), bodyStatement());
+});
+
+define.stmt(n.REPEAT, function () {
+    return new gbs.node.Repeat(g.token, parenthesisExpression(), bodyStatement());
+});
+
+define.stmt('{', function () {
+    var a = g.statements();
+    g.advance('}');
+    return a;
+});
+
+define.stmt('(', function () {
+    var a = g.statements();
+    g.advance(')');
+    return a;
+});
+
+define.root(n.PROGRAM, function () {
+    return new gbs.node.Program(g.token, g.block());
+});
+
+define.root(n.FUNCTION, function () {
+    g.newScope();
+    var token = g.token;
+    if (g.token.arity === 'name') {
+        if (g.token.value[0] !== g.token.value[0].toLowerCase()) {
+            g.error(token, 'El nombre de la función ' + token.value + ' debe emepzar con minúscula');
+        }
+        g.scope.define(g.token);
+        g.advance();
+    } else {
+        g.error(token, 'Se esperaba un nombre de función');
+    }
+    var parameters = parameterDeclarationList();
+    var body = bodyStatement();
+    var ret = body.pop();
+    if (!ret || ret.alias !== 'return' || !ret.expression) {
+        g.error(token, 'La función ' + token.value + ' debe terminar con un ' + n.RETURN);
+    }
+    g.scope.pop();
+    var declaration = new gbs.node.FunctionDeclaration(token, parameters, body, ret.expression);
+    declaration.std = function () {
+        return declaration;
+    };
+    return declaration;
+});
+
+define.stmt(n.RETURN, function () {
+    if (g.token.id !== ';') {
+        this.alias = 'return';
+        this.expression = parenthesisExpression();
+    }
+    return this;
+});
+
+define.root(n.PROCEDURE, function () {
+    g.newScope();
+    var token = g.token;
+    if (g.token.arity === 'name') {
+        if (g.token.value[0] !== g.token.value[0].toUpperCase()) {
+            g.error(token, 'El nombre del procedimiento ' + token.value + ' debe emepzar con mayúscula');
+        }
+        g.scope.define(g.token);
+        g.advance();
+    } else {
+        g.error(token, 'Se esperaba un nombre de procedimiento');
+    }
+    var parameters = parameterDeclarationList();
+    var body = bodyStatement();
+    g.scope.pop();
+    var declaration = new gbs.node.ProcedureDeclaration(token, parameters, body);
+    declaration.std = function () {
+        return declaration;
+    };
+    return declaration;
 });
 
 /**********************************************************************************************************************/
