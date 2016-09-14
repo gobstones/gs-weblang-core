@@ -381,6 +381,7 @@ gbs.Parser.prototype.symbol = function (id, bindingPower) {
 };
 
 gbs.Parser.prototype.expression = function (rightBindingPower) {
+    rightBindingPower = rightBindingPower | 0;
     var left;
     var t = this.token;
     this.advance();
@@ -539,6 +540,17 @@ gbs.Parser.prototype.infix = function (id, bp, led) {
     return s;
 };
 
+gbs.Parser.prototype.infixr = function (id, bp, led) {
+    var s = this.symbol(id, bp);
+    s.led = led || function (left) {
+            this.left = left;
+            this.right = g.expression(bp - 1);
+            this.arity = 'binary';
+            return this;
+        };
+    return s;
+};
+
 gbs.Parser.prototype.prefix = function (id, nud) {
     var s = this.symbol(id);
     s.nud = nud || function () {
@@ -566,14 +578,49 @@ gbs.Parser.prototype._currentRange = function () {
     return {start: this.token.range.start, end: this.token.range.end};
 };
 
-gbs.Parser.prototype.parseExpression = function (input) {
+gbs.Parser.prototype.roots = function () {
+    var roots = [];
+    var symbol;
+    for (; ;) {
+        if (this.token.id === '(end)') {
+            break;
+        }
+        var range = this._currentRange();
+        symbol = this.rootDeclaration();
+        if (symbol) {
+            this._applyRangeToSymbol(range, symbol);
+            roots.push(symbol);
+        }
+    }
+    if (roots.length === 0) {
+        return null;
+    }
+    return roots;
+};
+
+gbs.Parser.prototype._parseContextAwareNode = function (input, nodeParser) {
     this.tokens.input(input);
     this.newScope();
     this.advance();
-    var s = this.expression(0);
+    var s = nodeParser();
     this.advance('(end)');
     this.scope.pop();
     return s;
+};
+
+gbs.Parser.prototype.parseExpression = function (input) {
+    var self = this;
+    return this._parseContextAwareNode(input, function () { return self.expression(0); });
+};
+
+gbs.Parser.prototype.parseProgram = function (input) {
+    var self = this;
+    return this._parseContextAwareNode(input, function () { return self.roots(); });
+};
+
+gbs.Parser.prototype.parseStatements = function (input) {
+    var self = this;
+    return this._parseContextAwareNode(input, function () { return self.statements(); });
 };
 
 /**********************************************************************************************************************/
@@ -746,8 +793,9 @@ gbs.node.Repeat = function (node, expression, body) {
 };
 
 gbs.node.Program = function (node, body) {
+    this.alias = 'program';
     this.prototype = node;
-    this.body = body;
+    this.body = body || [];
 };
 
 gbs.node.ProcedureCall = function (node, declarationProvider, parameters) {
@@ -786,6 +834,11 @@ gbs.node.FunctionDeclaration = function (node, parameters, body, returnExpressio
     this.return = returnExpression;
 };
 
+gbs.node.Root = function (program, declarations) {
+    this.alias = 'root';
+    this.program = program;
+    this.declarations = declarations;
+};
 
 /**********************************************************************************************************************/
 /************************************************ GRAMMAR *************************************************************/
@@ -870,7 +923,7 @@ define.op('>=', 40, gbs.node.GreaterEqualOperation);
 
 define.constant(TOKEN_NAMES.FALSE, 'False', false, TOKEN_NAMES.BOOLEAN);
 define.constant(TOKEN_NAMES.TRUE, 'True', true, TOKEN_NAMES.BOOLEAN);
-define.constant(TOKEN_NAMES.BLUE, 'Blue',0, TOKEN_NAMES.COLOR);
+define.constant(TOKEN_NAMES.BLUE, 'Blue', 0, TOKEN_NAMES.COLOR);
 define.constant(TOKEN_NAMES.RED, 'Red', 1, TOKEN_NAMES.COLOR);
 define.constant(TOKEN_NAMES.BLACK, 'Black', 2, TOKEN_NAMES.COLOR);
 define.constant(TOKEN_NAMES.GREEN, 'Green', 3, TOKEN_NAMES.COLOR);
@@ -886,10 +939,10 @@ define.symbol(']');
 define.symbol('}');
 define.symbol(',');
 define.symbol('->');
-define.symbol(n.ELSE);
-define.symbol(n.TO);
+define.symbol(TOKEN_NAMES.ELSE);
+define.symbol(TOKEN_NAMES.TO);
 
-var separator =  {separator: ';'};
+var separator = {separator: ';'};
 define.stmt(';', function () {
     return separator;
 });
@@ -919,19 +972,19 @@ define.infixr(':=', 10, function (left) {
     return new gbs.node.Assignment(left, g.expression(9));
 });
 
-define.stmt(n.PUT, function () {
+define.stmt(TOKEN_NAMES.PUT, function () {
     return new gbs.node.PutStone(g.token, parameterListCall(g));
 });
 
-define.stmt(n.REMOVE, function () {
+define.stmt(TOKEN_NAMES.REMOVE, function () {
     return new gbs.node.RemoveStone(g.token, parameterListCall(g));
 });
 
-define.stmt(n.MOVE, function () {
+define.stmt(TOKEN_NAMES.MOVE, function () {
     return new gbs.node.MoveClaw(g.token, parameterListCall(g));
 });
 
-define.stmt(n.BOOM, function () {
+define.stmt(TOKEN_NAMES.BOOM, function () {
     var token = g.token;
     if (parenthesisExpression(g)) {
         throwParserError(token, 'BOOM no lleva parámetros')
@@ -939,22 +992,22 @@ define.stmt(n.BOOM, function () {
     return new gbs.node.Boom(token);
 });
 
-define.prefix(n.HAS_STONES, function () {
+define.prefix(TOKEN_NAMES.HAS_STONES, function () {
     return new gbs.node.HasStones(g.token, parameterListCall(g));
 });
 
-define.prefix(n.CAN_MOVE, function () {
+define.prefix(TOKEN_NAMES.CAN_MOVE, function () {
     return new gbs.node.CanMove(g.token, parameterListCall(g));
 });
 
-define.stmt(n.IF, function () {
+define.stmt(TOKEN_NAMES.IF, function () {
     var token = g.token;
     g.advance('(');
     var condition = g.expression(0);
     g.advance(')');
     var trueBranch = bodyStatement();
     var falseBranch = null;
-    if (g.token.id === n.ELSE) {
+    if (g.token.id === TOKEN_NAMES.ELSE) {
         g.scope.reserve(g.token);
         g.advance(n.ELSE);
         falseBranch = bodyStatement();
@@ -962,11 +1015,11 @@ define.stmt(n.IF, function () {
     return new gbs.node.If(token, condition, trueBranch, falseBranch);
 });
 
-define.stmt(n.SWITCH, function () {
+define.stmt(TOKEN_NAMES.SWITCH, function () {
     var token = g.token;
     var condition = parenthesisExpression();
-    if (g.token.id === n.TO) {
-        g.advance(n.TO);
+    if (g.token.id === TOKEN_NAMES.TO) {
+        g.advance(TOKEN_NAMES.TO);
     }
     g.advance('{');
     var cases = [];
@@ -986,11 +1039,11 @@ define.stmt(n.SWITCH, function () {
     return new gbs.node.Switch(token, condition, cases);
 });
 
-define.stmt(n.WHILE, function () {
+define.stmt(TOKEN_NAMES.WHILE, function () {
     return new gbs.node.While(g.token, parenthesisExpression(), bodyStatement());
 });
 
-define.stmt(n.REPEAT, function () {
+define.stmt(TOKEN_NAMES.REPEAT, function () {
     return new gbs.node.Repeat(g.token, parenthesisExpression(), bodyStatement());
 });
 
@@ -1006,11 +1059,11 @@ define.stmt('(', function () {
     return a;
 });
 
-define.root(n.PROGRAM, function () {
+define.root(TOKEN_NAMES.PROGRAM, function () {
     return new gbs.node.Program(g.token, g.block());
 });
 
-define.root(n.FUNCTION, function () {
+define.root(TOKEN_NAMES.FUNCTION, function () {
     g.newScope();
     var token = g.token;
     if (g.token.arity === 'name') {
@@ -1026,7 +1079,7 @@ define.root(n.FUNCTION, function () {
     var body = bodyStatement();
     var ret = body.pop();
     if (!ret || ret.alias !== 'return' || !ret.expression) {
-        g.error(token, 'La función ' + token.value + ' debe terminar con un ' + n.RETURN);
+        g.error(token, 'La función ' + token.value + ' debe terminar con un ' + TOKEN_NAMES.RETURN);
     }
     g.scope.pop();
     var declaration = new gbs.node.FunctionDeclaration(token, parameters, body, ret.expression);
@@ -1036,7 +1089,7 @@ define.root(n.FUNCTION, function () {
     return declaration;
 });
 
-define.stmt(n.RETURN, function () {
+define.stmt(TOKEN_NAMES.RETURN, function () {
     if (g.token.id !== ';') {
         this.alias = 'return';
         this.expression = parenthesisExpression();
@@ -1044,7 +1097,7 @@ define.stmt(n.RETURN, function () {
     return this;
 });
 
-define.root(n.PROCEDURE, function () {
+define.root(TOKEN_NAMES.PROCEDURE, function () {
     g.newScope();
     var token = g.token;
     if (g.token.arity === 'name') {
@@ -1065,6 +1118,20 @@ define.root(n.PROCEDURE, function () {
     };
     return declaration;
 });
+
+define.parse = function (input) {
+    var main;
+    var declarations = [];
+    var roots = g.parseProgram(input);
+    for (var i = 0; i < roots.length; i++) {
+        if (roots[i].alias === 'program') {
+            main = roots[i];
+        } else {
+            declarations.push(roots[i]);
+        }
+    }
+    return new gbs.node.Root(main, declarations);
+};
 
 /**********************************************************************************************************************/
 /************************************************ INTERPRETER *********************************************************/
@@ -1137,10 +1204,3 @@ gbs.node.ProcedureCall.prototype.interpret = function (context) {
     context.stopContext();
     return context;
 };
-
-var literal = define.symbol('(literal)');
-literal.nud = function () {
-    return new gbs.node.NumericLiteral(this.value);
-};
-
-
