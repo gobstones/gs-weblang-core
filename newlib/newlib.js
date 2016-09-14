@@ -898,11 +898,11 @@ var g = new gbs.Parser(new Lexer());
 var define = g;
 define.symbol('(end)');
 define.symbol('(literal)').nud = function () {
-    return new gbs.node.Variable(this, this.value);
+    return new gbs.node.NumericLiteral(this, this.value);
 };
 
 define.symbol('(name)').nud = function () {
-    return new gbs.node.NumericLiteral(this, this.value);
+    return new gbs.node.Variable(this, this.value);
 };
 
 define.op('+', 50, gbs.node.SumOperation);
@@ -1057,6 +1057,12 @@ define.stmt('(', function () {
     var a = g.statements();
     g.advance(')');
     return a;
+});
+
+define.prefix('(', function () {
+    var expression = g.expression(0);
+    g.advance(')');
+    return expression;
 });
 
 define.root(TOKEN_NAMES.PROGRAM, function () {
