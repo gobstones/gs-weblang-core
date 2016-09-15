@@ -127,7 +127,6 @@ Lexer.prototype._make = function (type, value) {
 Lexer.prototype._consume = function (type) {
     var text = this.buf.substring(this.from, this.i);
     var newToken = this._make(type, text);
-    console.log(newToken);
     this.from = this.i;
     this.startColumn = this.endColumn;
     return newToken;
@@ -420,7 +419,6 @@ gbs.Parser.prototype.advance = function (id) {
         return this.token;
     }
     t = tokens.next();
-    log('t: ', t);
     v = t.value;
     a = t.type;
     if (a === 'name') {
@@ -441,7 +439,7 @@ gbs.Parser.prototype.advance = function (id) {
     } else {
         throwParserError(t, 'Unexpected token.');
     }
-    log('o: ', t);
+
 
     var token = Object.create(o);
     token.range = t.range;
@@ -449,6 +447,7 @@ gbs.Parser.prototype.advance = function (id) {
     token.arity = a;
     this.lastToken = this.token;
     this.token = token;
+    log('o: ', token);
     return token;
 };
 
@@ -846,8 +845,10 @@ gbs.node.Root = function (program, declarations) {
 
 function parameterListCall(parser) {
     var parameters = [];
+    parser.advance('(');
     if (parser.token.id !== ')') {
         for (; ;) {
+            log('for T: ', parser.token.id);
             parameters.push(parser.expression(0));
             if (parser.token.id !== ',') {
                 break;
@@ -997,7 +998,11 @@ define.prefix(TOKEN_NAMES.HAS_STONES, function () {
 });
 
 define.prefix(TOKEN_NAMES.CAN_MOVE, function () {
-    return new gbs.node.CanMove(g.token, parameterListCall(g));
+    log('CanMove: ', g.token);
+    var id = g.token;
+    var parameters = parameterListCall(g);
+    log('parameters: ', parameters);
+    return new gbs.node.CanMove(id, parameters);
 });
 
 define.stmt(TOKEN_NAMES.IF, function () {
@@ -1158,7 +1163,6 @@ gbs.node.NumericLiteral.prototype.eval = function (context) {
 };
 
 gbs.node.SumOperation.prototype.eval = function (context) {
-    console.log('Left: ', this.left, ' Right: ', this.right);
     return this.left.eval(context) + this.right.eval(context)
 };
 gbs.node.DiffOperation.prototype.eval = function (context) {
