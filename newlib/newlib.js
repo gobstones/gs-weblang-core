@@ -453,11 +453,9 @@ gbs.Parser.prototype.advance = function (id) {
 
 gbs.Parser.prototype.constant = function (symbol, alias, value, type) {
     var x = this.symbol(symbol);
-    var self = this;
     x.nud = function () {
         return new gbs.node.Constant(x, alias, value, type);
     };
-    x.value = value;
     return x;
 };
 
