@@ -313,7 +313,7 @@ Scope.prototype.find = function (name) {
         e = e.parent;
         if (!e) {
             targetToken = this.parser.symbolTable[name];
-            return targetToken && typeof targetToken !== 'function' ? targetToken : symbolTable['(name)'];
+            return targetToken && typeof targetToken !== 'function' ? targetToken : this.parser.symbolTable['(name)'];
         }
     }
 };
