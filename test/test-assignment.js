@@ -1,15 +1,14 @@
 var test = require('ava');
-var Context = require('../lib/model/execution-context');
+var utils = require('./_utils');
 
-var g;
+function testAssignment(statements, variableName, expectedValue) {
+    test('Assignment ' + statements, function (t) {
+        var context = utils.runStatements(statements);
+        t.is(context.get(variableName), expectedValue);
+    });
+}
 
-test.beforeEach(function () {
-    g = require('../lib/gbs');
-});
-
-test('Assignment a := 2', function (t) {
-    var assign = g.parseStatements('a := 2')[0];
-    var context = new Context();
-    assign.interpret(context);
-    t.is(context.get('a'), 2);
-});
+testAssignment('a := 2', 'a', 2);
+testAssignment('a := True', 'a', true);
+testAssignment('a := 1 + 2', 'a', 3);
+testAssignment('a := 1 + 2; a := 5', 'a', 5);
