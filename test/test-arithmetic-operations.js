@@ -27,3 +27,4 @@ test('Combination 1+(2*3)=7', testOperation('1+(2*3)', 7));
 test('Combination 1+2*3=9', testOperation('1+2*3', 7));
 test('Combination 2*3+1=9', testOperation('2*3+1', 7));
 test('Combination 6*3/2=9', testOperation('6*3/2', 9));
+test('Combination 2 + (- 1)', testOperation('2 + (- 1)', 1));
