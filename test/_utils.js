@@ -1,3 +1,4 @@
+var test = require('ava');
 var Context = require('../lib/model/execution-context');
 var g = require('../lib/gbs');
 
@@ -10,6 +11,13 @@ utils.runStatements = function (text) {
         statements[i].interpret(context);
     }
     return context;
+};
+
+utils.testStatements = function (description, statements, variableName, expectedValue) {
+    test(description + ' ==> \n' + statements, function (t) {
+        var context = utils.runStatements(statements);
+        t.is(context.get(variableName), expectedValue);
+    });
 };
 
 module.exports = utils;

@@ -1,11 +1,7 @@
-var test = require('ava');
 var utils = require('./_utils');
 
 function testAssignment(statements, variableName, expectedValue) {
-    test('Assignment ' + statements, function (t) {
-        var context = utils.runStatements(statements);
-        t.is(context.get(variableName), expectedValue);
-    });
+    utils.testStatements('Assignment', statements, variableName, expectedValue);
 }
 
 testAssignment('a := 2', 'a', 2);
