@@ -34,14 +34,6 @@ test('Lexer ignores multi line comments', function (t) {
     t.is(comment.type, 'number');
 });
 
-// test('Lexer recognizes multi line comments without ending tokens', function (t) {
-//     var commentText = '/* some \n comment without end';
-//     lexer.input(commentText);
-//     var comment = lexer.next();
-//     t.is(comment.type, 'comment');
-//     t.is(comment.value, commentText);
-// });
-
 test('Lexer tokens have their original values', function (t) {
     lexer.input('someVariableName');
     t.is(lexer.next().value, 'someVariableName');

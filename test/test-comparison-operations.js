@@ -1,30 +1,17 @@
-var test = require('ava');
-var Context = require('../lib/model/execution-context');
+var utils = require('./_utils');
 
-var g;
-
-function testComparison(comparison) {
-    test(comparison + ' -> true', function (t) {
-        var context = new Context();
-        var ast = g.parseExpression(comparison);
-        t.is(ast.eval(context), true);
-    });
-}
-
-test.beforeEach(function () {
-    g = require('../lib/gbs');
-});
-
-testComparison('1 <  2');
-testComparison('1 <= 2');
-testComparison('2 <= 2');
-testComparison('2 <= 2');
-testComparison('not (2 > 3)');
-testComparison('not (2 >= 3)');
-testComparison('1 == 1');
-testComparison('2 == 2');
-testComparison('2 != 3');
-testComparison('2 != 3');
-testComparison('True != False');
-testComparison('True == True');
-testComparison('2 + 3 == 5');
+utils.testOperation('1 <  2', true);
+utils.testOperation('1 <= 2', true);
+utils.testOperation('2 <= 2', true);
+utils.testOperation('2 <= 2', true);
+utils.testOperation('not (2 > 3)', true);
+utils.testOperation('(2 > 3)', false);
+utils.testOperation('not (2 >= 3)', true);
+utils.testOperation('(2 >= 3)', false);
+utils.testOperation('1 == 1', true);
+utils.testOperation('2 == 2', true);
+utils.testOperation('2 != 3', true);
+utils.testOperation('2 != 3', true);
+utils.testOperation('True != False', true);
+utils.testOperation('True == True', true);
+utils.testOperation('2 + 3 == 5', true);

@@ -20,4 +20,12 @@ utils.testStatements = function (description, statements, variableName, expected
     });
 };
 
+utils.testOperation = function (expression, expected) {
+    test(expression + ' -> ' + expected, function (t) {
+        var context = new Context();
+        var ast = g.parseExpression(expression);
+        t.is(ast.eval(context), expected);
+    });
+};
+
 module.exports = utils;
