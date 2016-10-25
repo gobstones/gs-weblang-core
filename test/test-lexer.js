@@ -1,5 +1,5 @@
 var test = require('ava');
-var Lexer = require('../lib/lexer');
+var Lexer = require('../lib/lexer/lexer');
 
 var lexer;
 
