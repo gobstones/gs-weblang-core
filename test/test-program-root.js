@@ -19,4 +19,5 @@ utils.testProgram('basic-functions.gbs', function (t, context) {
 utils.testProgram('basic-procedures.gbs', function (t, context) {
     t.is(context.get('a'), true);
     t.is(context.get('b'), false);
+    t.is(context.get('c'), false);
 });

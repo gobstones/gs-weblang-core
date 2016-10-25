@@ -7,6 +7,9 @@ program {
 
     SacarAzul()
     b := hayBolitas(Azul)
+
+    Mover(Norte)
+    c := hayBolitas(Rojo)
 }
 
 procedure PonerUnaRoja() {
