@@ -15,3 +15,8 @@ utils.testProgram('repetitions.gbs', function (t, context) {
 utils.testProgram('basic-functions.gbs', function (t, context) {
     t.is(context.get('a'), 2);
 });
+
+utils.testProgram('basic-procedures.gbs', function (t, context) {
+    t.is(context.get('a'), true);
+    t.is(context.get('b'), false);
+});
