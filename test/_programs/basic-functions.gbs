@@ -1,0 +1,8 @@
+
+program {
+    a := two()
+}
+
+function two() {
+    return(2)
+}

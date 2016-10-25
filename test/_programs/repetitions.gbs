@@ -1,0 +1,11 @@
+program {
+    a := 10
+    while (a > 5) {
+        a := a -1
+    }
+
+    b := 1
+    repeat (a + 1) {
+        b := b + 1
+    }
+}
