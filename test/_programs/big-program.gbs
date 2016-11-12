@@ -1,0 +1,12 @@
+program {
+	Sarasa()
+	a := 3
+}
+
+procedure Sarasa(){
+    Poner(Rojo)
+}
+
+function hayCaramelo () {
+ return (hayBolitas(Azul) || hayBolitas(Verde) || hayBolitas(Rojo) || hayBolitas(Negro))
+}
