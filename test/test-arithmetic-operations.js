@@ -14,3 +14,5 @@ utils.testOperation('2*3+1', 7);
 utils.testOperation('(6 * 3) div 2', 9);
 utils.testOperation('6 * 3 div 2', 6);
 utils.testOperation('2 + (- 1)', 1);
+utils.testOperation('2 ^ 3', 8);
+utils.testOperation('5 * 2 ^ 3', 40);
