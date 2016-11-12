@@ -1,0 +1,18 @@
+program {
+    a := twice(3)
+    b := half(8)
+    c := sum(1,2)
+    d := sum(twice(2), half(6))
+}
+
+function twice(num) {
+    return(num*2)
+}
+
+function half(num) {
+    return(num div 2)
+}
+
+function sum(x, y) {
+    return(x + y)
+}
