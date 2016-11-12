@@ -9,5 +9,4 @@ utils.testStatements('repeat', 'a := 1; repeat (2 + 1) { a := a + 1}', 'a', 4);
 utils.testStatements('repeat', 'a := 1; repeat (2 + 1) { repeat (2) { a := a + 1 } }', 'a', 7);
 utils.testStatements('repeat', 'a := 1; repeat (2 + 1) { repeat (2) { a := a + 1 } }', 'a', 7);
 
-utils.testStatements('foreach', 'a := 0; foreach x in [minDir()..maxDir()] { a := a + 1 }', 'a', 4);
-utils.testStatements('foreach', 'a := 0; foreach x in [minColor()..maxColor()] { a := x }', 'a', 3);
+utils.testStatements('foreach', 'a := 0; foreach x in [1,2,3,4] { a := a + x }', 'a', 10);

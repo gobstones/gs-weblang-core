@@ -7,7 +7,7 @@ var utils = {};
 
 utils.runProgram = function (fileName) {
     var file = fs.readFileSync('./_programs/' + fileName, 'utf8');
-    var ast = g.parse(file);
+    var ast = g.getParser().parse(file);
     var context = new Context();
     ast.interpret(context);
     return context;
@@ -21,7 +21,7 @@ utils.testProgram = function (fileName, asserts) {
 };
 
 utils.runStatements = function (text) {
-    var statements = g.parseStatements(text);
+    var statements = g.getParser().parseStatements(text);
     var context = new Context();
     for (var i = 0; i < statements.length; i++) {
         statements[i].interpret(context);
@@ -39,7 +39,7 @@ utils.testStatements = function (description, statements, variableName, expected
 utils.testOperation = function (expression, expected) {
     test(expression + ' -> ' + expected, function (t) {
         var context = new Context();
-        var ast = g.parseExpression(expression);
+        var ast = g.getParser().parseExpression(expression);
         t.is(ast.eval(context), expected);
     });
 };
@@ -47,7 +47,7 @@ utils.testOperation = function (expression, expected) {
 utils.testOperation = function (expression, expected) {
     test(expression + ' -> ' + expected, function (t) {
         var context = new Context();
-        var ast = g.parseExpression(expression);
+        var ast = g.getParser().parseExpression(expression);
         t.is(ast.eval(context), expected);
     });
 };

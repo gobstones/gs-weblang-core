@@ -60,8 +60,8 @@ return /******/ (function(modules) { // webpackBootstrap
 	gbs.Lexer = __webpack_require__(7);
 	gbs.node = __webpack_require__(8);
 	gbs.errors = __webpack_require__(4);
-	
 	gbs.Context = __webpack_require__(22);
+	
 	gbs.getParser = function () {
 	    return grammar(gbs);
 	};
@@ -355,11 +355,9 @@ return /******/ (function(modules) { // webpackBootstrap
 	        }
 	        g.advance(TOKEN_NAMES.IN);
 	        g.advance('[');
-	        var rangeLeft = g.expression();
-	        g.advance('..');
-	        var rangeRight = g.expression();
+	        var items = commaSeparatedArguments(g);
 	        g.advance(']');
-	        return new gbs.node.ForEach(g.token, iterator, rangeLeft, rangeRight, g.block());
+	        return new gbs.node.ForEach(g.token, iterator, items, g.block());
 	    });
 	
 	    define.stmt('{', function () {
@@ -1755,47 +1753,17 @@ return /******/ (function(modules) { // webpackBootstrap
 	        return context;
 	    };
 	
-	    node.ForEach = function (token, iterator, rangeLeft, rangeRight, body) {
+	    node.ForEach = function (token, iterator, items, body) {
 	        this.alias = 'foreach';
 	        this.token = token;
 	        this.iterator = iterator;
-	        this.rangeLeft = rangeLeft;
-	        this.rangeRight = rangeRight;
+	        this.items = items;
 	        this.body = body;
 	    };
 	
 	    node.ForEach.prototype.interpret = function (context) {
-	        var rangeLeft = this.rangeLeft.eval(context);
-	        var rangeRight = this.rangeRight.eval(context);
-	
-	        if (typeof rangeLeft !== typeof rangeRight) {
-	            node.errors.throwInterpreterError(this.token, 'El rando del foreach debe ser mismos tipos de datos');
-	        }
-	
-	        var values = context.nativeRepresentations();
-	        var items = [];
-	        if (typeof rangeLeft === 'object') {
-	            if (rangeLeft[0] === values.minDir[0] && rangeLeft[1] === values.minDir[1]) {
-	                items = [values.north, values.east, values.south, values.west];
-	            } else {
-	                items = [values.west, values.south, values.east, values.north];
-	            }
-	        } else if (typeof rangeLeft === 'boolean') {
-	            if (rangeLeft) {
-	                items = [true, false];
-	            } else {
-	                items = [false, true];
-	            }
-	        } else if (typeof rangeLeft === 'number' && rangeLeft >= values.minColor && rangeLeft <= values.maxColor) {
-	            if (rangeLeft === values.minColor) {
-	                items = [values.blue, values.red, values.black, values.green];
-	            } else {
-	                items = [values.green, values.black, values.red, values.blue];
-	            }
-	        }
-	
-	        for (var i = 0; i < items.length; i++) {
-	            context.put(this.iterator.token.value, items[i]);
+	        for (var i = 0; i < this.items.length; i++) {
+	            context.put(this.iterator.token.value, this.items[i].eval(context));
 	            node.interpretBlock(this.body, context);
 	        }
 	
