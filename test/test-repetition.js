@@ -8,3 +8,6 @@ utils.testStatements('repeat', 'a := 1; repeat (3) { a := a + 1}', 'a', 4);
 utils.testStatements('repeat', 'a := 1; repeat (2 + 1) { a := a + 1}', 'a', 4);
 utils.testStatements('repeat', 'a := 1; repeat (2 + 1) { repeat (2) { a := a + 1 } }', 'a', 7);
 utils.testStatements('repeat', 'a := 1; repeat (2 + 1) { repeat (2) { a := a + 1 } }', 'a', 7);
+
+utils.testStatements('foreach', 'a := 0; foreach x in [minDir()..maxDir()] { a := a + 1 }', 'a', 4);
+utils.testStatements('foreach', 'a := 0; foreach x in [minColor()..maxColor()] { a := x }', 'a', 3);
