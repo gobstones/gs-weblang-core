@@ -66,6 +66,7 @@ program {
 </div>
 <script   src="https://code.jquery.com/jquery-3.1.0.min.js"   integrity="sha256-cCueBR6CsyA4/9szpPfrX3s49M9vUU5BgtiJj06wt/s="   crossorigin="anonymous"></script>
 <script src="src-min-noconflict/ace.js" type="text/javascript" charset="utf-8"></script>
+<script src="https://gobstones.github.io/gs-weblang-core/umd/index.umd.js" type="text/javascript" charset="utf-8"></script>
 
 <script>
 
@@ -91,76 +92,45 @@ program {
 
     var version = getUrlParameter("v");
     var full = getUrlParameter("full");
-    var remote = (version?"https://unpkg.com/gs-weblang-core@" + getUrlParameter("v") : "")  + "/umd/index.umd.js";
+    var remote = "";
 
-    $.getScript(remote, function() {
-        var editor = ace.edit("editor");
-        editor.setTheme("ace/theme/chrome");
-        editor.session.setMode("ace/mode/gobstones");
-        editor.getSession().setTabSize(4);
-        editor.setHighlightActiveLine(false);
+    var editor = ace.edit("editor");
+    editor.setTheme("ace/theme/chrome");
+    editor.session.setMode("ace/mode/gobstones");
+    editor.getSession().setTabSize(4);
+    editor.setHighlightActiveLine(false);
 
-        function replacer(key,value)
-        {
-            if (key == "scope") return undefined;
-            else if (key == "interpret") return undefined;
-            else if (key == "range" && !full) return undefined;
-            else if (key == "eval") return undefined;
-            else return value;
+    function replacer(key,value)
+    {
+        if (key == "scope") return undefined;
+        else if (key == "token") return undefined;
+        else if (key == "interpret") return undefined;
+        else if (key == "range" && !full) return undefined;
+        else if (key == "eval") return undefined;
+        else return value;
+    }
+
+    (function () {
+
+        function go(source) {
+            var ast = window.gsWeblangCore.getParser().parse(source);
+            var context = new window.gsWeblangCore.Context();
+
+            console.log(ast);
+            document.getElementById('ast').innerHTML = JSON.stringify(ast, replacer, '  ');
+            ast.interpret(context);
+            console.log(context.board());
+            var string = context.board().printAscii();
+            document.getElementById('result').innerHTML = string
+                .replace(/&/g, '&amp;')
+                .replace(/[<]/g, '&lt;');
+
         }
 
-        (function () {
-
-            function go(source) {
-                var tokens = window.gsWeblangCore.tokens;
-                var interpreter = window.gsWeblangCore.interpreter;
-                var Lexer = window.gsWeblangCore.lexer;
-                var Parser = window.gsWeblangCore.parser;
-                var Grammar = window.gsWeblangCore.grammar;
-                var Context = window.gsWeblangCore.context;
-
-                var grammar = Grammar(Parser, new Lexer(), tokens, interpreter);
-                editor.getSession().clearAnnotations();
-
-                var context = new Context();
-                context.init();
-//                try {
-                    var ast = grammar.parseProgram(source);
-                    console.log(source);
-                    console.log(ast);
-                    document.getElementById('ast').innerHTML = JSON.stringify(ast, replacer, '  ');
-//                }
-//                catch (e) {
-//                    if (e) {
-//                        console.log("CATCHED PARSER ERROR: ", e);
-//                        editor.getSession().setAnnotations([{
-//                            row: e.on.row,
-//                            column: 0,
-//                            text: e.error,
-//                            type: "error" // also warning and information
-//                        }]);
-////                    }
-//                }
-
-                //                    try {
-                grammar.interpret(ast, context);
-//                    } catch (e) {
-//                        console.log("INTERPRETER ERROR: ", e);
-//                    }
-
-                console.log(context.board());
-                var string = context.board().printAscii();
-                document.getElementById('result').innerHTML = string
-                    .replace(/&/g, '&amp;')
-                    .replace(/[<]/g, '&lt;');
-
-            }
-
-            editor.on("input", function () {
-                go(editor.getValue());
-            });
-        }());
-    });
+        editor.on("input", function () {
+            go(editor.getValue());
+        });
+    }());
 
 </script>
 
