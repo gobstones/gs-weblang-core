@@ -1295,7 +1295,8 @@ return /******/ (function(modules) { // webpackBootstrap
 /***/ function(module, exports) {
 
 	module.exports = function (node, constants) {
-	    var BinaryOperation = function (token, left, right) {
+	    var BinaryOperation = function (token, left, right, alias) {
+	        this.alias = alias;
 	        this.token = token;
 	        this.left = left;
 	        this.right = right;
@@ -1304,7 +1305,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	
 	    function defineBinaryOperation(className) {
 	        node[className] = function (token, left, right) {
-	            BinaryOperation.call(this, token, left, right);
+	            BinaryOperation.call(this, token, left, right, className);
 	        };
 	        node[className].prototype = new BinaryOperation();
 	    }
