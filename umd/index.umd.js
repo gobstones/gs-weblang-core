@@ -1153,7 +1153,8 @@ return /******/ (function(modules) { // webpackBootstrap
 	var constants = {
 	    STM: 'statement',
 	    BINARY: 'binary',
-	    EXPRESSION: 'binary'
+	    EXPRESSION: 'binary',
+	    NUMERIC_LITERAL: 'NumericLiteral'
 	};
 	
 	node.interpretBlock = function (block, context) {
@@ -1185,10 +1186,11 @@ return /******/ (function(modules) { // webpackBootstrap
 /* 9 */
 /***/ function(module, exports) {
 
-	module.exports = function (node) {
+	module.exports = function (node, constants) {
 	    node.NumericLiteral = function (token, value) {
 	        this.token = token;
 	        this.value = value;
+	        this.alias = constants.NUMERIC_LITERAL;
 	    };
 	    node.NumericLiteral.prototype.type = 'number';
 	
@@ -1417,7 +1419,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	    node.HasStones = function (token, parameters) {
 	        this.token = token;
 	        this.arity = constants.EXPRESSION;
-	        this.name = 'hasStones';
+	        this.alias = 'hasStones';
 	        this.parameters = parameters;
 	    };
 	
@@ -1428,7 +1430,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	    node.CanMove = function (token, parameters) {
 	        this.token = token;
 	        this.arity = constants.EXPRESSION;
-	        this.name = 'canMove';
+	        this.alias = 'canMove';
 	        this.parameters = parameters;
 	    };
 	
@@ -1439,7 +1441,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	    node.NumStones = function (token, parameters) {
 	        this.token = token;
 	        this.arity = constants.EXPRESSION;
-	        this.name = 'numStones';
+	        this.alias = 'numStones';
 	        this.parameters = parameters;
 	    };
 	
@@ -1450,7 +1452,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	    node.MinDir = function (token, parameters) {
 	        this.token = token;
 	        this.arity = constants.EXPRESSION;
-	        this.name = 'minDir';
+	        this.alias = 'minDir';
 	        this.parameters = parameters;
 	    };
 	
@@ -1461,7 +1463,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	    node.MaxDir = function (token, parameters) {
 	        this.token = token;
 	        this.arity = constants.EXPRESSION;
-	        this.name = 'maxDir';
+	        this.alias = 'maxDir';
 	        this.parameters = parameters;
 	    };
 	
@@ -1472,7 +1474,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	    node.MaxColor = function (token, parameters) {
 	        this.token = token;
 	        this.arity = constants.EXPRESSION;
-	        this.name = 'maxColor';
+	        this.alias = 'maxColor';
 	        this.parameters = parameters;
 	    };
 	
@@ -1483,7 +1485,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	    node.MinColor = function (token, parameters) {
 	        this.token = token;
 	        this.arity = constants.EXPRESSION;
-	        this.name = 'minColor';
+	        this.alias = 'minColor';
 	        this.parameters = parameters;
 	    };
 	
@@ -1494,7 +1496,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	    node.MinBool = function (token, parameters) {
 	        this.token = token;
 	        this.arity = constants.EXPRESSION;
-	        this.name = 'minBool';
+	        this.alias = 'minBool';
 	        this.parameters = parameters;
 	    };
 	
@@ -1505,7 +1507,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	    node.MaxBool = function (token, parameters) {
 	        this.token = token;
 	        this.arity = constants.EXPRESSION;
-	        this.name = 'maxBool';
+	        this.alias = 'maxBool';
 	        this.parameters = parameters;
 	    };
 	
@@ -1523,7 +1525,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	    node.MoveClaw = function (token, parameters) {
 	        this.token = token;
 	        this.arity = constants.STM;
-	        this.name = 'MoveClaw';
+	        this.alias = 'MoveClaw';
 	        this.parameters = parameters;
 	    };
 	
@@ -1540,7 +1542,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	    node.RemoveStone = function (token, parameters) {
 	        this.token = token;
 	        this.arity = constants.STM;
-	        this.name = 'Grab';
+	        this.alias = 'Grab';
 	        this.parameters = parameters;
 	    };
 	
@@ -1557,7 +1559,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	    node.PutStone = function (token, parameters) {
 	        this.token = token;
 	        this.arity = constants.STM;
-	        this.name = 'Drop';
+	        this.alias = 'Drop';
 	        this.parameters = parameters;
 	    };
 	
@@ -1569,7 +1571,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	    node.MoveToEdge = function (token, parameters) {
 	        this.token = token;
 	        this.arity = constants.STM;
-	        this.name = 'MoveToEdge';
+	        this.alias = 'MoveToEdge';
 	        this.parameters = parameters;
 	    };
 	
@@ -1581,7 +1583,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	    node.CleanBoard = function (token, parameters) {
 	        this.token = token;
 	        this.arity = constants.STM;
-	        this.name = 'MoveToEdge';
+	        this.alias = 'CleanBoard';
 	        this.parameters = parameters;
 	    };
 	
@@ -1593,7 +1595,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	    node.Boom = function (token) {
 	        this.token = token;
 	        this.arity = constants.STM;
-	        this.name = 'BOOM';
+	        this.alias = 'BOOM';
 	    };
 	
 	    node.Boom.prototype.interpret = function (context) {
