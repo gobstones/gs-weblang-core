@@ -1226,11 +1226,11 @@ return /******/ (function(modules) { // webpackBootstrap
 	module.exports = function (node) {
 	    node.Variable = function (token, id) {
 	        this.token = token;
-	        this.id = id;
+	        this.value = id;
 	    };
 	
 	    node.Variable.prototype.eval = function (context) {
-	        return context.get(this.id);
+	        return context.get(this.value);
 	    };
 	
 	    return node;
@@ -1263,6 +1263,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	module.exports = function (node) {
 	    node.If = function (token, condition, trueBranch, falseBranch) {
 	        this.token = token;
+	        this.alias = 'if';
 	        this.condition = condition;
 	        this.trueBranch = trueBranch;
 	        this.falseBranch = falseBranch;
@@ -1274,6 +1275,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	
 	    node.Switch = function (token, expression, cases) {
 	        this.token = token;
+	        this.alias = 'switch';
 	        this.expression = expression;
 	        this.cases = cases;
 	    };
@@ -1393,6 +1395,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	    node.NotOperation = function (token, expression) {
 	        this.token = token;
 	        this.expression = expression;
+	        this.alias = 'not';
 	    };
 	
 	    node.NotOperation.prototype.eval = function (context) {
@@ -1402,6 +1405,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	    node.SubstractionOperation = function (token, expression) {
 	        this.token = token;
 	        this.expression = expression;
+	        this.alias = '-';
 	    };
 	
 	    node.SubstractionOperation.prototype.eval = function (context) {
