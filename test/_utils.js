@@ -5,8 +5,12 @@ var g = require('../lib/gbs');
 
 var utils = {};
 
+utils.getFile = function (fileName) {
+    return fs.readFileSync('./_programs/' + fileName, 'utf8');
+};
+
 utils.runProgram = function (fileName) {
-    var file = fs.readFileSync('./_programs/' + fileName, 'utf8');
+    var file = utils.getFile(fileName);
     var ast = g.getParser().parse(file);
     var context = new Context();
     ast.interpret(context);
