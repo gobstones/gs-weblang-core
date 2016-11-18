@@ -1,0 +1,19 @@
+{
+  "name": "gs-weblang-core",
+  "description": "Gobstones parser and interpreter",
+  "main": "umd/index.umd.min.js",
+  "license": "MIT",
+  "keywords": [
+    "gobstones",
+    "interpreter"
+  ],
+  "homepage": "https://github.com/gobstones/gs-weblang-core",
+  "moduleType": [],
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ]
+}
