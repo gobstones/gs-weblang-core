@@ -73,7 +73,7 @@ return /******/ (function(modules) { // webpackBootstrap
 /******/ 	}
 /******/
 /******/ 	var hotApplyOnUpdate = true;
-/******/ 	var hotCurrentHash = "fc5db24d5a5820d43e11"; // eslint-disable-line no-unused-vars
+/******/ 	var hotCurrentHash = "b08851e3a36c3981c786"; // eslint-disable-line no-unused-vars
 /******/ 	var hotCurrentModuleData = {};
 /******/ 	var hotCurrentParents = []; // eslint-disable-line no-unused-vars
 /******/
@@ -2558,6 +2558,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	
 	Board.prototype.fromView = function (table) {
 	    this.table = viewAdapter.toModel(table);
+	    return this;
 	};
 	
 	module.exports = Board;
