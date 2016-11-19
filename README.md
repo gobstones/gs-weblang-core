@@ -36,7 +36,7 @@ function parseAndInterpret(sourceCode) {
 
     var ast = parser.parseProgram(sourceCode)[0];
     return ast
-        .interpret(ast, new Context())
+        .interpret(new Context())
         .board();
 }
 
