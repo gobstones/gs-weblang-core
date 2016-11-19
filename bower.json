@@ -10,10 +10,7 @@
   "homepage": "https://github.com/gobstones/gs-weblang-core",
   "moduleType": [],
   "ignore": [
-    "**/.*",
-    "node_modules",
-    "bower_components",
-    "test",
-    "tests"
+    "**/*",
+    "!umd/*"
   ]
 }
