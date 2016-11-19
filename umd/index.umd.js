@@ -73,7 +73,7 @@ return /******/ (function(modules) { // webpackBootstrap
 /******/ 	}
 /******/
 /******/ 	var hotApplyOnUpdate = true;
-/******/ 	var hotCurrentHash = "d3455cc0ea79bfd3d2d7"; // eslint-disable-line no-unused-vars
+/******/ 	var hotCurrentHash = "f53f4cececddbfbabfe0"; // eslint-disable-line no-unused-vars
 /******/ 	var hotCurrentModuleData = {};
 /******/ 	var hotCurrentParents = []; // eslint-disable-line no-unused-vars
 /******/
@@ -593,15 +593,18 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	var gbs = {};
 	var grammar = __webpack_require__(1);
+	
 	gbs.Parser = __webpack_require__(3);
 	gbs.Lexer = __webpack_require__(7);
 	gbs.node = __webpack_require__(8);
 	gbs.errors = __webpack_require__(4);
 	gbs.Context = __webpack_require__(22);
-	gbs.Gbb = {
-	    Reader: __webpack_require__(27),
-	    Builder: __webpack_require__(29)
+	
+	gbs.gbb = {
+	    reader: __webpack_require__(27),
+	    builder: __webpack_require__(29)
 	};
+	gbs.viewAdapter = __webpack_require__(24);
 	
 	gbs.getParser = function () {
 	    return grammar(gbs);
