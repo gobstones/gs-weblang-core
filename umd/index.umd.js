@@ -73,7 +73,7 @@ return /******/ (function(modules) { // webpackBootstrap
 /******/ 	}
 /******/
 /******/ 	var hotApplyOnUpdate = true;
-/******/ 	var hotCurrentHash = "f53f4cececddbfbabfe0"; // eslint-disable-line no-unused-vars
+/******/ 	var hotCurrentHash = "fc5db24d5a5820d43e11"; // eslint-disable-line no-unused-vars
 /******/ 	var hotCurrentModuleData = {};
 /******/ 	var hotCurrentParents = []; // eslint-disable-line no-unused-vars
 /******/
@@ -599,6 +599,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	gbs.node = __webpack_require__(8);
 	gbs.errors = __webpack_require__(4);
 	gbs.Context = __webpack_require__(22);
+	gbs.Board = __webpack_require__(23)
 	
 	gbs.gbb = {
 	    reader: __webpack_require__(27),
