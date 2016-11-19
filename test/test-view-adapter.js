@@ -8,17 +8,17 @@ var c = function (blue, red, black, green) {
 
 var model = function () {
     return [
-      [[0, 3], [0, 0]], // blue  - columns - rows
-      [[0, 0], [0, 4]], // red   - columns - rows
-      [[1, 0], [0, 0]], // black - columns - rows
-      [[0, 0], [5, 0]] //  green - columns - rows
+        [[0, 3], [0, 0]], // blue  - columns - rows
+        [[0, 0], [0, 4]], // red   - columns - rows
+        [[1, 0], [0, 0]], // black - columns - rows
+        [[0, 0], [5, 0]] //  green - columns - rows
     ];
 };
 
 var view = function () {
     return [
-      [c(3, 0, 0, 0), c(0, 4, 0, 0)], // 2nd row - columns - colors
-      [c(0, 0, 1, 0), c(0, 0, 0, 5)]  // 1st row - columns - colors
+        [c(3, 0, 0, 0), c(0, 4, 0, 0)], // 2nd row - columns - colors
+        [c(0, 0, 1, 0), c(0, 0, 0, 5)]  // 1st row - columns - colors
     ];
 };
 
