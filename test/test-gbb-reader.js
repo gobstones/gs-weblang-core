@@ -1,5 +1,5 @@
 var test = require('ava');
-var gbbReader = require('../lib/readers/gbb-reader');
+var gbbReader = require('../lib/gbb/gbb-reader');
 var utils = require('./_utils');
 
 test('Can build a board from a gbb file', function (t) {

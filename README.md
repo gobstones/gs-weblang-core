@@ -15,30 +15,29 @@ Npm package can be found on [gs-weblang-core](https://www.npmjs.com/package/gs-w
 Universal module files can be found on [unpkg](https://unpkg.com)
 For instance, version `0.1.4` can be fetched from `https://unpkg.com/gs-weblang-core@0.1.4/umd/`
 
+### Bower
+
+It can be installed with Bower too!
+```
+bower install --save gobstones/gs-weblang-core#1.2.0
+```
+
 ### Developer Tools
 
-
 Developer tools that include ascii board and AST viewer can be found on: `http://gobstones.github.io/gs-weblang-core/tools/index.html?v=0.1.4`
-
 
 Replace the version `v` with the desire version you want to try.
 
 ### hello-world example
 ```js
-function parse(sourceCode) {
-	var tokens = gsWeblangCore.tokens
-	var interpreter = gsWeblangCore.interpreter
-	var Lexer = gsWeblangCore.lexer
-	var Parser = gsWeblangCore.parser
-	var Grammar = gsWeblangCore.grammar
-	var Context = gsWeblangCore.context
+function parseAndInterpret(sourceCode) {
+    var Context = gsWeblangCore.context;
+    var parser = gsWebLangCore.getParser();
 
-	var grammar = Grammar(Parser, new Lexer(), tokens, interpreter)
-	var ast = grammar.parseProgram(sourceCode);
-	var context = new Context()
-	grammar.interpret(ast, context);
-
-	return context.board().table;
+    var ast = parser.parseProgram(sourceCode)[0];
+    return ast
+        .interpret(ast, new Context())
+        .board();
 }
 
 // ---------
