@@ -73,7 +73,7 @@ return /******/ (function(modules) { // webpackBootstrap
 /******/ 	}
 /******/
 /******/ 	var hotApplyOnUpdate = true;
-/******/ 	var hotCurrentHash = "d00df1106725e2baf7e6"; // eslint-disable-line no-unused-vars
+/******/ 	var hotCurrentHash = "14bca0ba42928ee1fb9c"; // eslint-disable-line no-unused-vars
 /******/ 	var hotCurrentModuleData = {};
 /******/ 	var hotCurrentParents = []; // eslint-disable-line no-unused-vars
 /******/
@@ -598,6 +598,9 @@ return /******/ (function(modules) { // webpackBootstrap
 	gbs.node = __webpack_require__(8);
 	gbs.errors = __webpack_require__(4);
 	gbs.Context = __webpack_require__(22);
+	gbs.Gbb = {
+	    Reader: __webpack_require__(24)
+	};
 	
 	gbs.getParser = function () {
 	    return grammar(gbs);
@@ -2543,6 +2546,138 @@ return /******/ (function(modules) { // webpackBootstrap
 	};
 	
 	module.exports = Board;
+
+
+/***/ },
+/* 24 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var Board = __webpack_require__(23);
+	var stringUtils = __webpack_require__(25);
+	
+	var gbbReader = {
+	};
+	
+	gbbReader.fromString = function (gbbString) {
+	    var gbbCode = this._try(gbbString);
+	
+	    var rawLines = stringUtils.splitByLines(gbbCode);
+	    var lines = rawLines.filter(function (line) {
+	        return !/^GBB\/(\d\.)+\d$/.test(line) && line !== '';
+	    });
+	
+	    return this._buildBoard(lines);
+	};
+	
+	gbbReader._buildBoard = function (lines) {
+	    var dimensions = this._getDimensions(lines);
+	    var header = this._getHeader(lines);
+	
+	    try {
+	        var board = new Board(dimensions[0], dimensions[1]);
+	        board.init();
+	        this._putCells(lines, board);
+	        board.x = header[0];
+	        board.y = header[1];
+	
+	        return board;
+	    } catch (err) {
+	        var error = new Error('Error building the board');
+	        error.inner = err;
+	        throw error;
+	    }
+	};
+	
+	gbbReader._getDimensions = function (lines) {
+	    var dimensions = this._try(
+	        lines[0].match(/^size (\d+) (\d+)$/)
+	    , 'dimensions');
+	    return this._getPositionOf(dimensions);
+	};
+	
+	gbbReader._getHeader = function (lines) {
+	    var header = this._try(
+	        lines[lines.length - 1].match(/^head (\d+) (\d+)$/)
+	    , 'header');
+	    return this._getPositionOf(header);
+	};
+	
+	gbbReader._putCells = function (lines, board) {
+	    var CELL_REGEXP = /^cell (\d+) (\d+)/;
+	
+	    var cellLines = lines.filter(function (line) {
+	        return CELL_REGEXP.test(line);
+	    });
+	
+	    cellLines.forEach(function (line) {
+	        var cell = line.match(CELL_REGEXP);
+	        var position = this._getPositionOf(cell, line);
+	
+	        board.x = position[0];
+	        board.y = position[1];
+	        this._putBalls(line, board);
+	    }.bind(this));
+	};
+	
+	gbbReader._putBalls = function (line, board) {
+	    var values = stringUtils.scan(line, /(Azul|Negro|Rojo|Verde) (\d+)/g);
+	    var getAmount = function (color) {
+	        var value = values.filter(function (it) {
+	            return it[0] === color;
+	        });
+	        return parseInt((value[0] || {})[1] || 0, 0);
+	    };
+	
+	    board.dropStones(Board.blue, getAmount('Azul'));
+	    board.dropStones(Board.black, getAmount('Negro'));
+	    board.dropStones(Board.red, getAmount('Rojo'));
+	    board.dropStones(Board.green, getAmount('Verde'));
+	};
+	
+	gbbReader._getPositionOf = function (source, element) {
+	    source = source || {};
+	
+	    return [
+	        this._try(source[1], element), this._try(source[2], element)
+	    ].map(function (it) {
+	        return parseInt(it, 0);
+	    });
+	};
+	
+	gbbReader._try = function (value, thingToParse) {
+	    if (!value) {
+	        throw new Error('Error parsing ' + (thingToParse || 'GBB file'));
+	    }
+	    return value;
+	};
+	
+	module.exports = gbbReader;
+
+
+/***/ },
+/* 25 */
+/***/ function(module, exports) {
+
+	module.exports = {
+	    splitByLines: function (string) {
+	        return string.split(/\r\n|\r|\n/);
+	    },
+	
+	    scan: function (string, regExp) {
+	        if (!regExp.global) {
+	            throw new Error('The regExp must be global (with "g" flag)');
+	        }
+	        var m = [];
+	        var r = m;
+	        m = regExp.exec(string);
+	        while (m) {
+	            m.shift();
+	            r.push(m);
+	            m = regExp.exec(string);
+	        }
+	        return r;
+	    }
+	};
 
 
 /***/ }
