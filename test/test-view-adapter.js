@@ -1,4 +1,5 @@
 var test = require('ava');
+var Model = require('../lib/model/model');
 var viewAdapter = require('../lib/model/view-adapter');
 
 var c = function (blue, red, black, green) {
@@ -27,4 +28,18 @@ test('Can adapt to the view', function (t) {
 
 test('Can adapt to the model', function (t) {
     t.deepEqual(viewAdapter.toModel(view()), model());
+});
+
+test('Can adapt to the view from the model', function (t) {
+    var aModel = new Model(4, 2);
+    aModel.table = viewAdapter.toModel(view());
+
+    t.deepEqual(aModel.toView(), view());
+});
+
+test('Can initialize the model from the view', function (t) {
+    var aModel = new Model(4, 2);
+    aModel.fromView(view());
+
+    t.deepEqual(aModel.table, model());
 });
