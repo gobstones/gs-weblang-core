@@ -73,7 +73,7 @@ return /******/ (function(modules) { // webpackBootstrap
 /******/ 	}
 /******/
 /******/ 	var hotApplyOnUpdate = true;
-/******/ 	var hotCurrentHash = "ec84cc92976ed978a903"; // eslint-disable-line no-unused-vars
+/******/ 	var hotCurrentHash = "49d1a39bc5110291f731"; // eslint-disable-line no-unused-vars
 /******/ 	var hotCurrentModuleData = {};
 /******/ 	var hotCurrentParents = []; // eslint-disable-line no-unused-vars
 /******/
@@ -2198,7 +2198,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	    node.ProcedureCall.prototype.interpret = function (context) {
 	        var target = this.declarationProvider();
 	        if (!target.declaration) {
-	            throw new node.errors.InterpreterException('El procedimiento ' + this.name + ' no se encuentra definido.', this.node);
+	            throw new node.errors.InterpreterException('El procedimiento ' + this.name + ' no se encuentra definido.', this);
 	        }
 	        var declaration = target.declaration;
 	        var parameterValues = evalArguments(context, this.parameters);
@@ -2221,7 +2221,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	    node.FunctionCall.prototype.eval = function (context) {
 	        var target = this.declarationProvider();
 	        if (!target.declaration) {
-	            throw new node.errors.InterpreterException('La función "' + this.name + '" no se encuentra definida.', this.node);
+	            throw new node.errors.InterpreterException('La función "' + this.name + '" no se encuentra definida.', this.token);
 	        }
 	        var declaration = target.declaration;
 	        var parameterValues = evalArguments(context, this.parameters);
