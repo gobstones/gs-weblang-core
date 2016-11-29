@@ -73,7 +73,7 @@ return /******/ (function(modules) { // webpackBootstrap
 /******/ 	}
 /******/
 /******/ 	var hotApplyOnUpdate = true;
-/******/ 	var hotCurrentHash = "729d3d73a5e08492502c"; // eslint-disable-line no-unused-vars
+/******/ 	var hotCurrentHash = "55d0190ef5817a7ed85e"; // eslint-disable-line no-unused-vars
 /******/ 	var hotCurrentModuleData = {};
 /******/ 	var hotCurrentParents = []; // eslint-disable-line no-unused-vars
 /******/
@@ -2071,11 +2071,15 @@ return /******/ (function(modules) { // webpackBootstrap
 /***/ function(module, exports) {
 
 	module.exports = function (node, constants) {
-	    var validateFirstToken = function (parameters) {
-	        var token = parameters[0].token;
-	        if (token.range) {
-	            throw new node.errors.InterpreterException('Identificador "' + token.value + '" inesperado', token);
+	    var getValue = function (parameters, context) {
+	        var parameter = parameters[0];
+	
+	        var value = parameter.eval(context);
+	        if (value === undefined) {
+	            throw new node.errors.InterpreterException('La variable "' + parameter.token.value + '" no existe', parameter.token);
 	        }
+	
+	        return value;
 	    };
 	
 	    node.MoveClaw = function (token, parameters) {
@@ -2086,10 +2090,10 @@ return /******/ (function(modules) { // webpackBootstrap
 	    };
 	
 	    node.MoveClaw.prototype.interpret = function (context) {
-	        validateFirstToken(this.parameters);
+	        var value = getValue(this.parameters, context);
 	
 	        try {
-	            context.board().move(this.parameters[0].eval(context));
+	            context.board().move(value);
 	        } catch (err) {
 	            err.on = this.token;
 	            throw err;
@@ -2105,10 +2109,10 @@ return /******/ (function(modules) { // webpackBootstrap
 	    };
 	
 	    node.RemoveStone.prototype.interpret = function (context) {
-	        validateFirstToken(this.parameters);
+	        var value = getValue(this.parameters, context);
 	
 	        try {
-	            context.board().removeStone(this.parameters[0].eval(context));
+	            context.board().removeStone(value);
 	        } catch (err) {
 	            err.on = this.token;
 	            throw err;
@@ -2124,8 +2128,8 @@ return /******/ (function(modules) { // webpackBootstrap
 	    };
 	
 	    node.PutStone.prototype.interpret = function (context) {
-	        validateFirstToken(this.parameters);
-	        context.board().putStone(this.parameters[0].eval(context));
+	        var value = getValue(this.parameters, context);
+	        context.board().putStone(value);
 	        return context;
 	    };
 	
@@ -2137,9 +2141,8 @@ return /******/ (function(modules) { // webpackBootstrap
 	    };
 	
 	    node.MoveToEdge.prototype.interpret = function (context) {
-	        validateFirstToken(this.parameters);
-	
-	        context.board().moveToEdge(this.parameters[0].eval(context));
+	        var value = getValue(this.parameters, context);
+	        context.board().moveToEdge(value);
 	        return context;
 	    };
 	
