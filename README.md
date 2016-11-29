@@ -19,7 +19,7 @@ For instance, version `0.1.4` can be fetched from `https://unpkg.com/gs-weblang-
 
 It can be installed with Bower too!
 ```
-bower install --save gobstones/gs-weblang-core#1.2.0
+bower install --save gobstones/gs-weblang-core#bower
 ```
 
 ### Developer Tools
@@ -43,4 +43,16 @@ function parseAndInterpret(sourceCode) {
 // ---------
 
 parse("program { Mover(Norte)\nPoner(Azul) }");
+```
+
+### deploy to bower
+```bash
+# increase package.json
+git checkout bower
+git pull origin master
+./node_modules/.bin/webpack
+./node_modules/.bin/webpack --output-file index.umd.min.js -p
+git commit -am "Bump"
+git push
+git checkout master
 ```
