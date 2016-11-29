@@ -1,7 +1,7 @@
 {
   "name": "gs-weblang-core",
   "description": "Gobstones parser and interpreter",
-  "main": "umd/index.umd.min.js",
+  "main": "umd/index.umd.js",
   "license": "MIT",
   "keywords": [
     "gobstones",
