@@ -12,7 +12,7 @@ utils.testProgramFailure('unknown-function.gbs', function (t, reason) {
 
 var testUnexpectedConstant = function (fileName) {
     utils.testProgramFailure(fileName, function (t, reason) {
-        t.is(reason.message, 'Identificador "CualquierCosa" inesperado');
+        t.is(reason.message, 'La variable "CualquierCosa" no existe');
         t.deepEqual(reason.on.range.start, {row: 1, column: 11});
     });
 };
