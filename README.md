@@ -47,7 +47,6 @@ parse("program { Mover(Norte)\nPoner(Azul) }");
 
 ### deploy to bower
 ```bash
-# increase package.json
 git checkout bower
 git pull origin master
 ./node_modules/.bin/webpack
@@ -60,4 +59,5 @@ PACKAGE_VERSION=$(cat package.json \
 git commit -am "Bump $PACKAGE_VERSION"
 git push
 git checkout master
+rm -rf umd
 ```
