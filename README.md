@@ -52,7 +52,12 @@ git checkout bower
 git pull origin master
 ./node_modules/.bin/webpack
 ./node_modules/.bin/webpack --output-file index.umd.min.js -p
-git commit -am "Bump"
+PACKAGE_VERSION=$(cat package.json \
+  | grep version \
+  | head -1 \
+  | awk -F: '{ print $2 }' \
+  | sed 's/[",]//g')
+git commit -am "Bump $PACKAGE_VERSION"
 git push
 git checkout master
 ```
