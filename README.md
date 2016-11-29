@@ -56,7 +56,8 @@ PACKAGE_VERSION=$(cat package.json \
   | head -1 \
   | awk -F: '{ print $2 }' \
   | sed 's/[",]//g')
-git commit -am "Bump $PACKAGE_VERSION"
+git add -A .
+git commit -m "Bump $PACKAGE_VERSION"
 git push
 git checkout master
 rm -rf umd
