@@ -56,4 +56,14 @@ utils.testOperation = function (expression, expected) {
     });
 };
 
+utils.testProgramFailure = function (fileName, asserts) {
+    test('Testing failure of ' + fileName, function (t) {
+        var reason = t.throws(function () {
+            utils.runProgram(fileName);
+        });
+
+        asserts(t, reason);
+    });
+};
+
 module.exports = utils;
