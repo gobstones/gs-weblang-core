@@ -31,7 +31,7 @@ Replace the version `v` with the desire version you want to try.
 ### hello-world example
 ```js
 function parseAndInterpret(sourceCode) {
-    var Context = gsWeblangCore.context;
+    var Context = gsWeblangCore.Context;
     var parser = gsWebLangCore.getParser();
 
     var ast = parser.parseProgram(sourceCode)[0];
