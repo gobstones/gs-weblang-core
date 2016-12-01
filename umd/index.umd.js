@@ -73,7 +73,7 @@ return /******/ (function(modules) { // webpackBootstrap
 /******/ 	}
 /******/
 /******/ 	var hotApplyOnUpdate = true;
-/******/ 	var hotCurrentHash = "55d0190ef5817a7ed85e"; // eslint-disable-line no-unused-vars
+/******/ 	var hotCurrentHash = "7f3f1eaf52adb2b069d7"; // eslint-disable-line no-unused-vars
 /******/ 	var hotCurrentModuleData = {};
 /******/ 	var hotCurrentParents = []; // eslint-disable-line no-unused-vars
 /******/
@@ -1352,7 +1352,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	
 	errors.throwParserError = function (token, description) {
 	    var someError = {error: description, on: token};
-	    log('PARSER ERROR: ', someError);
+	    // log('PARSER ERROR: ', someError);
 	    throw someError;
 	};
 	
