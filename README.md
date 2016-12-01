@@ -45,10 +45,10 @@ function parseAndInterpret(sourceCode) {
 parse("program { Mover(Norte)\nPoner(Azul) }");
 ```
 
-### deploy to bower
+### deploy
 ```bash
-git checkout bower
-git pull origin master
+git checkout master
+git pull origin dev
 ./node_modules/.bin/webpack
 ./node_modules/.bin/webpack --output-file index.umd.min.js -p
 PACKAGE_VERSION=$(cat package.json \
@@ -59,6 +59,6 @@ PACKAGE_VERSION=$(cat package.json \
 git add -A .
 git commit -m "Bump $PACKAGE_VERSION"
 git push
-git checkout master
+git checkout dev
 rm -rf umd
 ```
