@@ -73,7 +73,7 @@ return /******/ (function(modules) { // webpackBootstrap
 /******/ 	}
 /******/
 /******/ 	var hotApplyOnUpdate = true;
-/******/ 	var hotCurrentHash = "7f3f1eaf52adb2b069d7"; // eslint-disable-line no-unused-vars
+/******/ 	var hotCurrentHash = "4e365e938a19cb5e59e7"; // eslint-disable-line no-unused-vars
 /******/ 	var hotCurrentModuleData = {};
 /******/ 	var hotCurrentParents = []; // eslint-disable-line no-unused-vars
 /******/
@@ -19740,7 +19740,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	
 	    var rawLines = stringUtils.splitByLines(gbbCode);
 	    var lines = rawLines.filter(function (line) {
-	        return !/^GBB\/(\d\.)+\d$/.test(line) && line !== '';
+	        return !/GBB\/(\d\.)+\d$/.test(line) && line !== '';
 	    });
 	
 	    return this._buildBoard(lines);
