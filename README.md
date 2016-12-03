@@ -59,6 +59,8 @@ PACKAGE_VERSION=$(cat package.json \
 git add -A .
 git commit -m "Bump $PACKAGE_VERSION"
 git push
+git tag $PACKAGE_VERSION
+git push --tags
 git checkout dev
 rm -rf umd
 ```
