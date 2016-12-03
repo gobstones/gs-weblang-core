@@ -16,8 +16,13 @@ utils.testProgram('basic-functions.gbs', function (t, context) {
     t.is(context.get('a'), 2);
 });
 
-utils.testProgram('basic-procedures.gbs', function (t, context) {
-    t.is(context.get('a'), true);
-    t.is(context.get('b'), false);
-    t.is(context.get('c'), false);
-});
+var testBasicProcedures = function (fileName) {
+    utils.testProgram(fileName, function (t, context) {
+        t.is(context.get('a'), true);
+        t.is(context.get('b'), false);
+        t.is(context.get('c'), false);
+    });
+};
+
+testBasicProcedures('basic-procedures.gbs');
+testBasicProcedures('basic-procedures-defining-procedures-first.gbs');
