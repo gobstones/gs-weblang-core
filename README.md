@@ -34,7 +34,7 @@ function parseAndInterpret(sourceCode) {
     var Context = gsWeblangCore.Context;
     var parser = gsWebLangCore.getParser();
 
-    var ast = parser.parseProgram(sourceCode)[0];
+    var ast = parser.parse(sourceCode).program;
     return ast
         .interpret(new Context())
         .board();
