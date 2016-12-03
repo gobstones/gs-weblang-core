@@ -56,9 +56,12 @@ PACKAGE_VERSION=$(cat package.json \
   | head -1 \
   | awk -F: '{ print $2 }' \
   | sed 's/[",]//g')
+PACKAGE_VERSION=$(echo $PACKAGE_VERSION | xargs)
 git add -A .
 git commit -m "Bump $PACKAGE_VERSION"
 git push
+git tag $PACKAGE_VERSION
+git push --tags
 git checkout dev
 rm -rf umd
 ```
