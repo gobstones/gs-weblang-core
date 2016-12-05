@@ -73,7 +73,7 @@ return /******/ (function(modules) { // webpackBootstrap
 /******/ 	}
 /******/
 /******/ 	var hotApplyOnUpdate = true;
-/******/ 	var hotCurrentHash = "a09884262fc259a64d63"; // eslint-disable-line no-unused-vars
+/******/ 	var hotCurrentHash = "f7f637f0cbbb1caf2775"; // eslint-disable-line no-unused-vars
 /******/ 	var hotCurrentModuleData = {};
 /******/ 	var hotCurrentParents = []; // eslint-disable-line no-unused-vars
 /******/
@@ -754,6 +754,8 @@ return /******/ (function(modules) { // webpackBootstrap
 	    });
 	
 	    define.infix('(', 80, function (left) {
+	        left.token = left.token || left;
+	
 	        if (left.token.arity !== 'name') {
 	            gbs.errors.throwParserError(left, left.token.value + ' no es una función o procedimiento');
 	        }
