@@ -73,7 +73,7 @@ return /******/ (function(modules) { // webpackBootstrap
 /******/ 	}
 /******/
 /******/ 	var hotApplyOnUpdate = true;
-/******/ 	var hotCurrentHash = "f7f637f0cbbb1caf2775"; // eslint-disable-line no-unused-vars
+/******/ 	var hotCurrentHash = "87addd7d9fa2c21c6950"; // eslint-disable-line no-unused-vars
 /******/ 	var hotCurrentModuleData = {};
 /******/ 	var hotCurrentParents = []; // eslint-disable-line no-unused-vars
 /******/
@@ -1359,9 +1359,10 @@ return /******/ (function(modules) { // webpackBootstrap
 	    throw new errors.InterpreterException(message, token);
 	};
 	
-	errors.InterpreterException = function (message, on) {
+	errors.InterpreterException = function (message, on, reason) {
 	    this.message = message;
 	    this.on = on;
+	    this.reason = reason;
 	};
 	errors.InterpreterException.prototype = new Error();
 	
@@ -2065,7 +2066,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	
 	        var value = parameter.eval(context);
 	        if (value === undefined) {
-	            throw new node.errors.InterpreterException('La variable "' + parameter.token.value + '" no existe', parameter.token);
+	            throw new node.errors.InterpreterException('El nombre "' + parameter.token.value + '" no existe.', parameter.token, {code: 'undefined_variable', detail: parameter.token.value});
 	        }
 	
 	        return value;
@@ -2203,7 +2204,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	    node.ProcedureCall.prototype.interpret = function (context) {
 	        var target = this.declarationProvider();
 	        if (!target.declaration) {
-	            throw new node.errors.InterpreterException('El procedimiento ' + this.name + ' no se encuentra definido.', this);
+	            throw new node.errors.InterpreterException('El procedimiento ' + this.name + ' no se encuentra definido.', this, {code: 'undefined_procedure', detail: this.name});
 	        }
 	        var declaration = target.declaration;
 	        var parameterValues = evalArguments(context, this.parameters);
@@ -2226,7 +2227,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	    node.FunctionCall.prototype.eval = function (context) {
 	        var target = this.declarationProvider();
 	        if (!target.declaration) {
-	            throw new node.errors.InterpreterException('La función "' + this.name + '" no se encuentra definida.', this.token);
+	            throw new node.errors.InterpreterException('La función "' + this.name + '" no se encuentra definida.', this.token, {code: 'undefined_function', detail: this.name});
 	        }
 	        var declaration = target.declaration;
 	        var parameterValues = evalArguments(context, this.parameters);
@@ -2425,8 +2426,9 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	var viewAdapter = __webpack_require__(23);
 	
-	var GobstonesError = function (message) {
+	var GobstonesError = function (message, reason) {
 	    this.message = message;
+	    this.reason = reason;
 	};
 	GobstonesError.prototype = new Error('BOOM');
 	
@@ -2499,13 +2501,13 @@ return /******/ (function(modules) { // webpackBootstrap
 	
 	Board.prototype.removeStone = function (color) {
 	    if (this.table[color][this.x][this.y] <= 0) {
-	        throw new GobstonesError('Se intentó sacar una bolita pero ya no quedaban bolitas para sacar');
+	        throw new GobstonesError('Se intentó sacar una bolita pero ya no quedaban bolitas para sacar', {code: 'no_stones'});
 	    }
 	    this.table[color][this.x][this.y] -= 1;
 	};
 	
 	Board.prototype.boom = function () {
-	    throw new GobstonesError('BOOM!');
+	    throw new GobstonesError('BOOM!', 'boom');
 	};
 	
 	Board.prototype.clear = function () {
@@ -2524,7 +2526,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	
 	Board.prototype.move = function (vec) {
 	    if (!this.canMove(vec)) {
-	        throw new GobstonesError('Te caiste del tablero por: x=' + this.x + ' y=' + this.y);
+	        throw new GobstonesError('Te caíste del tablero por: x=' + this.x + ' y=' + this.y, {code: 'out_of_board', detail: {x: this.x, y: this.y}});
 	    }
 	    this.x += vec[0];
 	    this.y += vec[1];
