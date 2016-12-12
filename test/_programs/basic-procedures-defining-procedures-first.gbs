@@ -1,0 +1,21 @@
+procedure PonerUnaRoja() {
+    Poner(Rojo)
+}
+
+procedure SacarAzul() {
+    Sacar(Azul)
+}
+
+program {
+
+    PonerUnaRoja()
+    Poner(Azul)
+
+    a := hayBolitas(Rojo)
+
+    SacarAzul()
+    b := hayBolitas(Azul)
+
+    Mover(Norte)
+    c := hayBolitas(Rojo)
+}

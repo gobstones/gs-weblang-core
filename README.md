@@ -31,10 +31,10 @@ Replace the version `v` with the desire version you want to try.
 ### hello-world example
 ```js
 function parseAndInterpret(sourceCode) {
-    var Context = gsWeblangCore.context;
+    var Context = gsWeblangCore.Context;
     var parser = gsWebLangCore.getParser();
 
-    var ast = parser.parseProgram(sourceCode)[0];
+    var ast = parser.parse(sourceCode).program;
     return ast
         .interpret(new Context())
         .board();
@@ -45,10 +45,10 @@ function parseAndInterpret(sourceCode) {
 parse("program { Mover(Norte)\nPoner(Azul) }");
 ```
 
-### deploy to bower
+### deploy
 ```bash
-git checkout bower
-git pull origin master
+git checkout master
+git pull origin dev
 ./node_modules/.bin/webpack
 ./node_modules/.bin/webpack --output-file index.umd.min.js -p
 PACKAGE_VERSION=$(cat package.json \
@@ -56,9 +56,12 @@ PACKAGE_VERSION=$(cat package.json \
   | head -1 \
   | awk -F: '{ print $2 }' \
   | sed 's/[",]//g')
+PACKAGE_VERSION=$(echo $PACKAGE_VERSION | xargs)
 git add -A .
 git commit -m "Bump $PACKAGE_VERSION"
 git push
-git checkout master
+git tag $PACKAGE_VERSION
+git push --tags
+git checkout dev
 rm -rf umd
 ```
