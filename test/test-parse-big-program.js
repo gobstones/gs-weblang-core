@@ -2,7 +2,8 @@ var utils = require('./_utils');
 
 utils.testProgram('big-program.gbs', function (t, context) {
     t.is(context.get('a'), 3);
-    t.is(context.exitCode, 6);
+    console.log(context);
+    t.is(context.exitStatus, 6);
 });
 
 utils.testProgram('functions-with-arguments.gbs', function (t, context) {
