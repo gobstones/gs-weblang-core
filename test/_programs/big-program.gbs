@@ -1,6 +1,8 @@
 program {
 	Sarasa()
 	a := 3
+
+    return(a * 2)
 }
 
 procedure Sarasa(){
