@@ -73,7 +73,7 @@ return /******/ (function(modules) { // webpackBootstrap
 /******/ 	}
 /******/
 /******/ 	var hotApplyOnUpdate = true;
-/******/ 	var hotCurrentHash = "87addd7d9fa2c21c6950"; // eslint-disable-line no-unused-vars
+/******/ 	var hotCurrentHash = "594454d69676dfb52673"; // eslint-disable-line no-unused-vars
 /******/ 	var hotCurrentModuleData = {};
 /******/ 	var hotCurrentParents = []; // eslint-disable-line no-unused-vars
 /******/
@@ -598,14 +598,14 @@ return /******/ (function(modules) { // webpackBootstrap
 	gbs.Lexer = __webpack_require__(6);
 	gbs.node = __webpack_require__(7);
 	gbs.errors = __webpack_require__(4);
-	gbs.Context = __webpack_require__(21);
-	gbs.Board = __webpack_require__(22);
+	gbs.Context = __webpack_require__(23);
+	gbs.Board = __webpack_require__(24);
 	
 	gbs.gbb = {
 	    reader: __webpack_require__(26),
 	    builder: __webpack_require__(28)
 	};
-	gbs.viewAdapter = __webpack_require__(23);
+	gbs.viewAdapter = __webpack_require__(25);
 	
 	gbs.getParser = function () {
 	    return grammar(gbs);
@@ -1353,10 +1353,6 @@ return /******/ (function(modules) { // webpackBootstrap
 	errors.throwParserError = function (token, description) {
 	    var someError = {error: description, on: token};
 	    throw someError;
-	};
-	
-	errors.throwInterpreterError = function (token, message) {
-	    throw new errors.InterpreterException(message, token);
 	};
 	
 	errors.InterpreterException = function (message, on, reason) {
@@ -2234,7 +2230,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	        context.startContext();
 	        context.pushBoard();
 	        fillParameters(context, parameterValues, declaration);
-	        node.interpretBlock(target.body, context);
+	        node.interpretBlock(declaration.body, context);
 	        var result = declaration.return.expression.eval(context);
 	        context.popBoard();
 	        context.stopContext();
@@ -2273,8 +2269,12 @@ return /******/ (function(modules) { // webpackBootstrap
 	        this.alias = 'return';
 	        this.expression = expression;
 	    };
-	}
-	;
+	
+	    node.ReturnStatement.prototype.interpret = function (context) {
+	        node.errors.throwParserError(this.token, 'Solo puede usarse return como última sentencia de una función o programa.');
+	        return context;
+	    };
+	};
 
 
 /***/ },
@@ -2332,18 +2332,35 @@ return /******/ (function(modules) { // webpackBootstrap
 
 /***/ },
 /* 20 */
-/***/ function(module, exports) {
+/***/ function(module, exports, __webpack_require__) {
 
+	var _ = __webpack_require__(21);
+	
 	module.exports = function (node) {
 	    node.Program = function (token, body) {
 	        this.token = token;
 	        this.alias = 'program';
 	        this.body = body || [];
+	
+	        var lastSentence = _.last(this.body);
+	        if (lastSentence.alias === 'return') {
+	            this.returnSentence = this.body.pop();
+	        }
 	    };
 	
 	    node.Program.prototype.interpret = function (context) {
 	        node.interpretBlock(this.body, context);
+	        this._setExitStatus(context);
 	        return context;
+	    };
+	
+	    node.Program.prototype._setExitStatus = function (context) {
+	        if (this.returnSentence) {
+	            context.exitStatus = this.returnSentence.expression.eval(context);
+	            if (!_.isNumber(context.exitStatus)) {
+	                throw new node.errors.InterpreterException('El programa retornó un valor no numérico.', this.returnSentence.token, {code: 'non_numeric_exit_code', detail: context.exitStatus});
+	            }
+	        }
 	    };
 	
 	    node.Root = function (program, declarations) {
@@ -2356,280 +2373,11 @@ return /******/ (function(modules) { // webpackBootstrap
 	        this.program.interpret(context);
 	        return context;
 	    };
-	}
-	;
+	};
 
 
 /***/ },
 /* 21 */
-/***/ function(module, exports, __webpack_require__) {
-
-	var Board = __webpack_require__(22);
-	
-	var Context = function () {
-	    var variablesStack = [];
-	    var boardsStack = [];
-	    var currentBoard = new Board(9, 9);
-	    var currentVariables = {};
-	
-	    this.init = function () {
-	        currentBoard.init();
-	    };
-	
-	    this.nativeRepresentations = function () {
-	        return Board;
-	    };
-	
-	    this.board = function () {
-	        return currentBoard;
-	    };
-	
-	    this.put = function (key, value) {
-	        currentVariables[key] = value;
-	    };
-	
-	    this.get = function (id) {
-	        return currentVariables[id];
-	    };
-	
-	    this.all = function () {
-	        return currentVariables;
-	    };
-	
-	    this.startContext = function () {
-	        variablesStack.push(currentVariables);
-	        currentVariables = {};
-	    };
-	
-	    this.stopContext = function () {
-	        currentVariables = variablesStack.pop();
-	    };
-	
-	    this.pushBoard = function () {
-	        boardsStack.push(currentBoard);
-	        currentBoard = currentBoard.clone();
-	    };
-	
-	    this.popBoard = function () {
-	        currentBoard = boardsStack.pop();
-	    };
-	
-	    this.init();
-	};
-	
-	module.exports = Context;
-
-
-/***/ },
-/* 22 */
-/***/ function(module, exports, __webpack_require__) {
-
-	var viewAdapter = __webpack_require__(23);
-	
-	var GobstonesError = function (message, reason) {
-	    this.message = message;
-	    this.reason = reason;
-	};
-	GobstonesError.prototype = new Error('BOOM');
-	
-	function Board(sizeX, sizeY) {
-	    this.x = 0;
-	    this.y = 0;
-	
-	    this.sizeX = sizeX;
-	    this.sizeY = sizeY;
-	}
-	
-	Board.blue = 0;
-	Board.red = 1;
-	Board.black = 2;
-	Board.green = 3;
-	
-	Board.north = [0, 1];
-	Board.east = [1, 0];
-	Board.south = [0, -1];
-	Board.west = [-1, 0];
-	
-	Board.minDir = Board.north;
-	Board.maxDir = Board.west;
-	Board.minColor = Board.blue;
-	Board.maxColor = Board.green;
-	
-	Board.prototype.init = function () {
-	    this.table = [[], [], [], []];
-	    for (var i = 0; i < this.sizeX; i++) {
-	        this.table[0][i] = [];
-	        this.table[1][i] = [];
-	        this.table[2][i] = [];
-	        this.table[3][i] = [];
-	        for (var j = 0; j < this.sizeY; j++) {
-	            this.table[0][i][j] = 0;
-	            this.table[1][i][j] = 0;
-	            this.table[2][i][j] = 0;
-	            this.table[3][i][j] = 0;
-	        }
-	    }
-	};
-	
-	Board.prototype.clone = function () {
-	    var c = new Board(this.sizeX, this.sizeY);
-	    c.init();
-	    for (var i = 0; i < this.sizeX; i++) {
-	        c.table[0][i] = [];
-	        c.table[1][i] = [];
-	        c.table[2][i] = [];
-	        c.table[3][i] = [];
-	        for (var j = 0; j < this.sizeY; j++) {
-	            c.table[0][i][j] = this.table[0][i][j];
-	            c.table[1][i][j] = this.table[1][i][j];
-	            c.table[2][i][j] = this.table[2][i][j];
-	            c.table[3][i][j] = this.table[3][i][j];
-	        }
-	    }
-	    c.x = this.x;
-	    c.y = this.y;
-	    return c;
-	};
-	
-	Board.prototype.putStone = function (color) {
-	    this.dropStones(color, 1);
-	};
-	
-	Board.prototype.dropStones = function (color, amount) {
-	    this.table[color][this.x][this.y] += amount;
-	};
-	
-	Board.prototype.removeStone = function (color) {
-	    if (this.table[color][this.x][this.y] <= 0) {
-	        throw new GobstonesError('Se intentó sacar una bolita pero ya no quedaban bolitas para sacar', {code: 'no_stones'});
-	    }
-	    this.table[color][this.x][this.y] -= 1;
-	};
-	
-	Board.prototype.boom = function () {
-	    throw new GobstonesError('BOOM!', 'boom');
-	};
-	
-	Board.prototype.clear = function () {
-	    this.init();
-	};
-	
-	Board.prototype.amountStones = function (color) {
-	    return this.table[color][this.x][this.y];
-	};
-	
-	Board.prototype.canMove = function (vec) {
-	    var nextX = this.x + vec[0];
-	    var nextY = this.y + vec[1];
-	    return nextX < this.sizeX && nextX >= 0 && nextY < this.sizeY && nextY >= 0;
-	};
-	
-	Board.prototype.move = function (vec) {
-	    if (!this.canMove(vec)) {
-	        throw new GobstonesError('Te caíste del tablero por: x=' + this.x + ' y=' + this.y, {code: 'out_of_board', detail: {x: this.x, y: this.y}});
-	    }
-	    this.x += vec[0];
-	    this.y += vec[1];
-	};
-	
-	Board.prototype.moveToEdge = function (vec) {
-	    if (vec[0] === 1) {
-	        this.x = this.sizeX - 1;
-	    } else if (vec[0] === -1) {
-	        this.x = 0;
-	    } else if (vec[1] === 1) {
-	        this.y = this.sizeY - 1;
-	    } else if (vec[1] === -1) {
-	        this.y = 0;
-	    }
-	};
-	
-	Board.prototype.printAscii = function () {
-	    var out = this.sizeX + 'x' + this.sizeY + '\n';
-	    var az = this.table[0];
-	    var ro = this.table[1];
-	    var ne = this.table[2];
-	    var ve = this.table[3];
-	    for (var j = this.sizeY - 1; j >= 0; j--) {
-	        for (var i = 0; i < this.sizeX; i++) {
-	            out += (az[i][j] || ro[i][j] || ne[i][j] || ve[i][j]) ? '#' : '.';
-	        }
-	        out += '\n';
-	    }
-	    return out;
-	};
-	
-	Board.prototype.toView = function () {
-	    return viewAdapter.toView(this.table);
-	};
-	
-	Board.prototype.fromView = function (table) {
-	    this.table = viewAdapter.toModel(table);
-	    return this;
-	};
-	
-	module.exports = Board;
-
-
-/***/ },
-/* 23 */
-/***/ function(module, exports, __webpack_require__) {
-
-	var _ = __webpack_require__(24);
-	
-	var viewAdapter = {
-	};
-	
-	viewAdapter.toView = function (table) {
-	    var mapColor = function (index, color) {
-	        return table[index].map(function (rows) {
-	            return rows.map(function (amount) {
-	                var cell = {};
-	                cell[color] = amount;
-	                return cell;
-	            });
-	        });
-	    };
-	
-	    var blueColumns = mapColor(0, 'blue');
-	    var redColumns = mapColor(1, 'red');
-	    var blackColumns = mapColor(2, 'black');
-	    var greenColumns = mapColor(3, 'green');
-	
-	    return _(blueColumns)
-	        .zipWith(redColumns, blackColumns, greenColumns, _.merge)
-	        .unzip()
-	        .reverse()
-	        .value();
-	};
-	
-	viewAdapter.toModel = function (table) {
-	    var transposeOfTable = _(_.cloneDeep(table))
-	        .reverse()
-	        .unzip()
-	        .value();
-	
-	    var unmapColor = function (color) {
-	        return transposeOfTable.map(function (rows) {
-	            return rows.map(function (cell) {
-	                return cell[color];
-	            });
-	        });
-	    };
-	
-	    return [
-	        unmapColor('blue'),
-	        unmapColor('red'),
-	        unmapColor('black'),
-	        unmapColor('green')
-	    ];
-	};
-	
-	module.exports = viewAdapter;
-
-
-/***/ },
-/* 24 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_RESULT__;/* WEBPACK VAR INJECTION */(function(global, module) {/**
@@ -19698,10 +19446,10 @@ return /******/ (function(modules) { // webpackBootstrap
 	  }
 	}.call(this));
 	
-	/* WEBPACK VAR INJECTION */}.call(exports, (function() { return this; }()), __webpack_require__(25)(module)))
+	/* WEBPACK VAR INJECTION */}.call(exports, (function() { return this; }()), __webpack_require__(22)(module)))
 
 /***/ },
-/* 25 */
+/* 22 */
 /***/ function(module, exports) {
 
 	module.exports = function(module) {
@@ -19717,10 +19465,278 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
+/* 23 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var Board = __webpack_require__(24);
+	
+	var Context = function () {
+	    var variablesStack = [];
+	    var boardsStack = [];
+	    var currentBoard = new Board(9, 9);
+	    var currentVariables = {};
+	
+	    this.init = function () {
+	        currentBoard.init();
+	    };
+	
+	    this.nativeRepresentations = function () {
+	        return Board;
+	    };
+	
+	    this.board = function () {
+	        return currentBoard;
+	    };
+	
+	    this.put = function (key, value) {
+	        currentVariables[key] = value;
+	    };
+	
+	    this.get = function (id) {
+	        return currentVariables[id];
+	    };
+	
+	    this.all = function () {
+	        return currentVariables;
+	    };
+	
+	    this.startContext = function () {
+	        variablesStack.push(currentVariables);
+	        currentVariables = {};
+	    };
+	
+	    this.stopContext = function () {
+	        currentVariables = variablesStack.pop();
+	    };
+	
+	    this.pushBoard = function () {
+	        boardsStack.push(currentBoard);
+	        currentBoard = currentBoard.clone();
+	    };
+	
+	    this.popBoard = function () {
+	        currentBoard = boardsStack.pop();
+	    };
+	
+	    this.init();
+	};
+	
+	module.exports = Context;
+
+
+/***/ },
+/* 24 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var viewAdapter = __webpack_require__(25);
+	
+	var GobstonesError = function (message, reason) {
+	    this.message = message;
+	    this.reason = reason;
+	};
+	GobstonesError.prototype = new Error('BOOM');
+	
+	function Board(sizeX, sizeY) {
+	    this.x = 0;
+	    this.y = 0;
+	
+	    this.sizeX = sizeX;
+	    this.sizeY = sizeY;
+	}
+	
+	Board.blue = 0;
+	Board.red = 1;
+	Board.black = 2;
+	Board.green = 3;
+	
+	Board.north = [0, 1];
+	Board.east = [1, 0];
+	Board.south = [0, -1];
+	Board.west = [-1, 0];
+	
+	Board.minDir = Board.north;
+	Board.maxDir = Board.west;
+	Board.minColor = Board.blue;
+	Board.maxColor = Board.green;
+	
+	Board.prototype.init = function () {
+	    this.table = [[], [], [], []];
+	    for (var i = 0; i < this.sizeX; i++) {
+	        this.table[0][i] = [];
+	        this.table[1][i] = [];
+	        this.table[2][i] = [];
+	        this.table[3][i] = [];
+	        for (var j = 0; j < this.sizeY; j++) {
+	            this.table[0][i][j] = 0;
+	            this.table[1][i][j] = 0;
+	            this.table[2][i][j] = 0;
+	            this.table[3][i][j] = 0;
+	        }
+	    }
+	};
+	
+	Board.prototype.clone = function () {
+	    var c = new Board(this.sizeX, this.sizeY);
+	    c.init();
+	    for (var i = 0; i < this.sizeX; i++) {
+	        c.table[0][i] = [];
+	        c.table[1][i] = [];
+	        c.table[2][i] = [];
+	        c.table[3][i] = [];
+	        for (var j = 0; j < this.sizeY; j++) {
+	            c.table[0][i][j] = this.table[0][i][j];
+	            c.table[1][i][j] = this.table[1][i][j];
+	            c.table[2][i][j] = this.table[2][i][j];
+	            c.table[3][i][j] = this.table[3][i][j];
+	        }
+	    }
+	    c.x = this.x;
+	    c.y = this.y;
+	    return c;
+	};
+	
+	Board.prototype.putStone = function (color) {
+	    this.dropStones(color, 1);
+	};
+	
+	Board.prototype.dropStones = function (color, amount) {
+	    this.table[color][this.x][this.y] += amount;
+	};
+	
+	Board.prototype.removeStone = function (color) {
+	    if (this.table[color][this.x][this.y] <= 0) {
+	        throw new GobstonesError('Se intentó sacar una bolita pero ya no quedaban bolitas para sacar', {code: 'no_stones'});
+	    }
+	    this.table[color][this.x][this.y] -= 1;
+	};
+	
+	Board.prototype.boom = function () {
+	    throw new GobstonesError('BOOM!', 'boom');
+	};
+	
+	Board.prototype.clear = function () {
+	    this.init();
+	};
+	
+	Board.prototype.amountStones = function (color) {
+	    return this.table[color][this.x][this.y];
+	};
+	
+	Board.prototype.canMove = function (vec) {
+	    var nextX = this.x + vec[0];
+	    var nextY = this.y + vec[1];
+	    return nextX < this.sizeX && nextX >= 0 && nextY < this.sizeY && nextY >= 0;
+	};
+	
+	Board.prototype.move = function (vec) {
+	    if (!this.canMove(vec)) {
+	        throw new GobstonesError('Te caíste del tablero por: x=' + this.x + ' y=' + this.y, {code: 'out_of_board', detail: {x: this.x, y: this.y}});
+	    }
+	    this.x += vec[0];
+	    this.y += vec[1];
+	};
+	
+	Board.prototype.moveToEdge = function (vec) {
+	    if (vec[0] === 1) {
+	        this.x = this.sizeX - 1;
+	    } else if (vec[0] === -1) {
+	        this.x = 0;
+	    } else if (vec[1] === 1) {
+	        this.y = this.sizeY - 1;
+	    } else if (vec[1] === -1) {
+	        this.y = 0;
+	    }
+	};
+	
+	Board.prototype.printAscii = function () {
+	    var out = this.sizeX + 'x' + this.sizeY + '\n';
+	    var az = this.table[0];
+	    var ro = this.table[1];
+	    var ne = this.table[2];
+	    var ve = this.table[3];
+	    for (var j = this.sizeY - 1; j >= 0; j--) {
+	        for (var i = 0; i < this.sizeX; i++) {
+	            out += (az[i][j] || ro[i][j] || ne[i][j] || ve[i][j]) ? '#' : '.';
+	        }
+	        out += '\n';
+	    }
+	    return out;
+	};
+	
+	Board.prototype.toView = function () {
+	    return viewAdapter.toView(this.table);
+	};
+	
+	Board.prototype.fromView = function (table) {
+	    this.table = viewAdapter.toModel(table);
+	    return this;
+	};
+	
+	module.exports = Board;
+
+
+/***/ },
+/* 25 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var _ = __webpack_require__(21);
+	
+	var viewAdapter = {
+	};
+	
+	viewAdapter.toView = function (table) {
+	    var mapColor = function (index, color) {
+	        return table[index].map(function (rows) {
+	            return rows.map(function (amount) {
+	                var cell = {};
+	                cell[color] = amount;
+	                return cell;
+	            });
+	        });
+	    };
+	
+	    var blueColumns = mapColor(0, 'blue');
+	    var redColumns = mapColor(1, 'red');
+	    var blackColumns = mapColor(2, 'black');
+	    var greenColumns = mapColor(3, 'green');
+	
+	    return _(blueColumns)
+	        .zipWith(redColumns, blackColumns, greenColumns, _.merge)
+	        .unzip()
+	        .reverse()
+	        .value();
+	};
+	
+	viewAdapter.toModel = function (table) {
+	    var transposeOfTable = _(_.cloneDeep(table))
+	        .reverse()
+	        .unzip()
+	        .value();
+	
+	    var unmapColor = function (color) {
+	        return transposeOfTable.map(function (rows) {
+	            return rows.map(function (cell) {
+	                return cell[color];
+	            });
+	        });
+	    };
+	
+	    return [
+	        unmapColor('blue'),
+	        unmapColor('red'),
+	        unmapColor('black'),
+	        unmapColor('green')
+	    ];
+	};
+	
+	module.exports = viewAdapter;
+
+
+/***/ },
 /* 26 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var Board = __webpack_require__(22);
+	var Board = __webpack_require__(24);
 	var stringUtils = __webpack_require__(27);
 	
 	var gbbReader = {
