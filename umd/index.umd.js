@@ -1531,6 +1531,10 @@ return /******/ (function(modules) { // webpackBootstrap
 	        return value;
 	    };
 	
+	    var snapshot = function (node, context) {
+	        return {token: node.token, name: context.getCurrentName()};
+	    };
+	
 	    node.MoveClaw = function (token, parameters) {
 	        this.token = token;
 	        this.arity = constants.STM;
@@ -1542,7 +1546,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	        var value = getValue(this.parameters, context);
 	
 	        try {
-	            context.board().move(value);
+	            context.board().move(value, snapshot(this, context));
 	        } catch (err) {
 	            err.on = this.token;
 	            throw err;
@@ -1561,7 +1565,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	        var value = getValue(this.parameters, context);
 	
 	        try {
-	            context.board().removeStone(value);
+	            context.board().removeStone(value, snapshot(this, context));
 	        } catch (err) {
 	            err.on = this.token;
 	            throw err;
@@ -1578,7 +1582,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	
 	    node.PutStone.prototype.interpret = function (context) {
 	        var value = getValue(this.parameters, context);
-	        context.board().putStone(value);
+	        context.board().putStone(value, snapshot(this, context));
 	        return context;
 	    };
 	
@@ -1591,7 +1595,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	
 	    node.MoveToEdge.prototype.interpret = function (context) {
 	        var value = getValue(this.parameters, context);
-	        context.board().moveToEdge(value);
+	        context.board().moveToEdge(value, snapshot(this, context));
 	        return context;
 	    };
 	
@@ -1603,7 +1607,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	    };
 	
 	    node.CleanBoard.prototype.interpret = function (context) {
-	        context.board().clear();
+	        context.board().clear(snapshot(this, context));
 	        return context;
 	    };
 	
@@ -1667,7 +1671,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	        }
 	        var declaration = target.declaration;
 	        var parameterValues = evalArguments(context, this.parameters);
-	        context.startContext();
+	        context.startContext(this.name);
 	        fillParameters(context, parameterValues, declaration);
 	        node.interpretBlock(declaration.body, context);
 	        context.stopContext();
@@ -1690,7 +1694,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	        }
 	        var declaration = target.declaration;
 	        var parameterValues = evalArguments(context, this.parameters);
-	        context.startContext();
+	        context.startContext(this.name);
 	        context.pushBoard();
 	        fillParameters(context, parameterValues, declaration);
 	        node.interpretBlock(declaration.body, context);
@@ -18936,11 +18940,13 @@ return /******/ (function(modules) { // webpackBootstrap
 /* 23 */
 /***/ function(module, exports, __webpack_require__) {
 
+	var _ = __webpack_require__(21);
 	var Board = __webpack_require__(24);
 	
 	var Context = function () {
 	    var variablesStack = [];
 	    var boardsStack = [];
+	    var namesStack = ['program'];
 	    var currentBoard = new Board(9, 9);
 	    var currentVariables = {};
 	
@@ -18968,12 +18974,14 @@ return /******/ (function(modules) { // webpackBootstrap
 	        return currentVariables;
 	    };
 	
-	    this.startContext = function () {
+	    this.startContext = function (name) {
+	        namesStack.push(name);
 	        variablesStack.push(currentVariables);
 	        currentVariables = {};
 	    };
 	
 	    this.stopContext = function () {
+	        namesStack.pop();
 	        currentVariables = variablesStack.pop();
 	    };
 	
@@ -18984,6 +18992,10 @@ return /******/ (function(modules) { // webpackBootstrap
 	
 	    this.popBoard = function () {
 	        currentBoard = boardsStack.pop();
+	    };
+	
+	    this.getCurrentName = function () {
+	        return _.last(namesStack);
 	    };
 	
 	    this.init();
@@ -19065,29 +19077,56 @@ return /******/ (function(modules) { // webpackBootstrap
 	    return c;
 	};
 	
-	Board.prototype.putStone = function (color) {
-	    this.dropStones(color, 1);
-	};
-	
 	Board.prototype.dropStones = function (color, amount) {
-	    this.saveSnapshot();
 	    this.table[color][this.x][this.y] += amount;
 	};
 	
-	Board.prototype.removeStone = function (color) {
-	    this.saveSnapshot();
+	// ---ACTIONS---
+	
+	Board.prototype.putStone = function (color, snapshot) {
+	    this.saveSnapshot(snapshot);
+	    this.dropStones(color, 1);
+	};
+	
+	Board.prototype.removeStone = function (color, snapshot) {
+	    this.saveSnapshot(snapshot);
 	    if (this.table[color][this.x][this.y] <= 0) {
 	        throw new GobstonesError('Se intentó sacar una bolita pero ya no quedaban bolitas para sacar', {code: 'no_stones'});
 	    }
 	    this.table[color][this.x][this.y] -= 1;
 	};
 	
-	Board.prototype.boom = function () {
-	    throw new GobstonesError('BOOM!', 'boom');
+	Board.prototype.clear = function (snapshot) {
+	    this.saveSnapshot(snapshot);
+	    this.init();
 	};
 	
-	Board.prototype.clear = function () {
-	    this.init();
+	Board.prototype.move = function (vec, snapshot) {
+	    this.saveSnapshot(snapshot);
+	    if (!this.canMove(vec)) {
+	        throw new GobstonesError('Te caíste del tablero por: x=' + this.x + ' y=' + this.y, {code: 'out_of_board', detail: {x: this.x, y: this.y}});
+	    }
+	    this.x += vec[0];
+	    this.y += vec[1];
+	};
+	
+	Board.prototype.moveToEdge = function (vec, snapshot) {
+	    this.saveSnapshot(snapshot);
+	    if (vec[0] === 1) {
+	        this.x = this.sizeX - 1;
+	    } else if (vec[0] === -1) {
+	        this.x = 0;
+	    } else if (vec[1] === 1) {
+	        this.y = this.sizeY - 1;
+	    } else if (vec[1] === -1) {
+	        this.y = 0;
+	    }
+	};
+	
+	// -------------
+	
+	Board.prototype.boom = function () {
+	    throw new GobstonesError('BOOM!', 'boom');
 	};
 	
 	Board.prototype.amountStones = function (color) {
@@ -19098,27 +19137,6 @@ return /******/ (function(modules) { // webpackBootstrap
 	    var nextX = this.x + vec[0];
 	    var nextY = this.y + vec[1];
 	    return nextX < this.sizeX && nextX >= 0 && nextY < this.sizeY && nextY >= 0;
-	};
-	
-	Board.prototype.move = function (vec) {
-	    this.saveSnapshot();
-	    if (!this.canMove(vec)) {
-	        throw new GobstonesError('Te caíste del tablero por: x=' + this.x + ' y=' + this.y, {code: 'out_of_board', detail: {x: this.x, y: this.y}});
-	    }
-	    this.x += vec[0];
-	    this.y += vec[1];
-	};
-	
-	Board.prototype.moveToEdge = function (vec) {
-	    if (vec[0] === 1) {
-	        this.x = this.sizeX - 1;
-	    } else if (vec[0] === -1) {
-	        this.x = 0;
-	    } else if (vec[1] === 1) {
-	        this.y = this.sizeY - 1;
-	    } else if (vec[1] === -1) {
-	        this.y = 0;
-	    }
 	};
 	
 	Board.prototype.printAscii = function () {
@@ -19145,8 +19163,9 @@ return /******/ (function(modules) { // webpackBootstrap
 	    return this;
 	};
 	
-	Board.prototype.saveSnapshot = function () {
-	    this.snapshots.push(this.clone());
+	Board.prototype.saveSnapshot = function (snapshot) {
+	    snapshot.board = this.clone();
+	    this.snapshots.push(snapshot);
 	};
 	
 	module.exports = Board;
