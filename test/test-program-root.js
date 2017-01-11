@@ -16,6 +16,21 @@ utils.testProgram('basic-functions.gbs', function (t, context) {
     t.is(context.get('a'), 2);
 });
 
+utils.testProgram('step-by-step.gbs', function (t, context) {
+    var checkHeader = function (board, x, y) {
+        t.is(board.x, x);
+        t.is(board.y, y);
+    };
+
+    checkHeader(context.board(), 1, 0);
+
+    var snapshots = context.board().snapshots;
+    t.is(snapshots.length, 3);
+    checkHeader(snapshots[0], 0, 0);
+    checkHeader(snapshots[1], 0, 1);
+    checkHeader(snapshots[2], 1, 1);
+});
+
 var testBasicProcedures = function (fileName) {
     utils.testProgram(fileName, function (t, context) {
         t.is(context.get('a'), true);
