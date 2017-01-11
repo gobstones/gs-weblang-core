@@ -1,5 +1,9 @@
 program {
     Mover(Norte)
-    Mover(Este)
+    OtroContexto()
     Mover(Sur)
+}
+
+procedure OtroContexto() {
+    Mover(Este)
 }

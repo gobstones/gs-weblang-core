@@ -26,9 +26,15 @@ utils.testProgram('step-by-step.gbs', function (t, context) {
 
     var snapshots = context.board().snapshots;
     t.is(snapshots.length, 3);
-    checkHeader(snapshots[0], 0, 0);
-    checkHeader(snapshots[1], 0, 1);
-    checkHeader(snapshots[2], 1, 1);
+
+    checkHeader(snapshots[0].board, 0, 0);
+    t.is(snapshots[0].name, 'program');
+
+    checkHeader(snapshots[1].board, 0, 1);
+    t.is(snapshots[1].name, 'OtroContexto');
+
+    checkHeader(snapshots[2].board, 1, 1);
+    t.is(snapshots[2].name, 'program');
 });
 
 var testBasicProcedures = function (fileName) {
