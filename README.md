@@ -62,5 +62,4 @@ git push
 git tag $PACKAGE_VERSION
 git push --tags
 git checkout dev
-rm -rf umd
 ```
