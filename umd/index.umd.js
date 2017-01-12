@@ -1810,7 +1810,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	        this.body = body || [];
 	
 	        var lastSentence = _.last(this.body);
-	        if (lastSentence.alias === 'return') {
+	        if (lastSentence && lastSentence.alias === 'return') {
 	            this.returnSentence = this.body.pop();
 	        }
 	    };
