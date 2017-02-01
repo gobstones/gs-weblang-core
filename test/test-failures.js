@@ -1,8 +1,8 @@
 var utils = require('./_utils');
 
 utils.testProgramFailure('boom.gbs', function (t, reason) {
-    t.is(reason.message, 'El procedimiento Boom no se encuentra definido.');
-    t.deepEqual(reason.reason, {code: 'undefined_procedure', detail: 'Boom'});
+    t.is(reason.message, 'El procedimiento Boomba no se encuentra definido.');
+    t.deepEqual(reason.reason, {code: 'undefined_procedure', detail: 'Boomba'});
     t.deepEqual(reason.on.range.start, {row: 1, column: 5});
 });
 
@@ -22,6 +22,23 @@ utils.testProgramFailure('returning-non-numeric-exit-code.gbs', function (t, rea
     t.is(reason.message, 'El programa retornó un valor no numérico.');
     t.deepEqual(reason.reason, {code: 'non_numeric_exit_code', detail: [0, 1]});
     t.deepEqual(reason.on.range.start, {row: 3, column: 11});
+});
+
+utils.testProgramFailure('user-boom/good-boom.gbs', function (t, reason) {
+    t.is(reason.message, 'Ahora sí se rompe todo');
+    t.is(reason.reason.code, 'boom-called');
+});
+
+utils.testProgramFailure('user-boom/without-parameters.gbs', function (t, reason) {
+    t.is(reason.error, 'Se esperaba un mensaje de error entre comillas');
+});
+
+utils.testProgramFailure('user-boom/with-color-as-parameter.gbs', function (t, reason) {
+    t.is(reason.error, 'Se esperaba un mensaje de error entre comillas');
+});
+
+utils.testProgramFailure('user-boom/with-no-closing-quote.gbs', function (t, reason) {
+    t.is(reason.error, 'Se esperaba un cierre de comillas');
 });
 
 var testUnexpectedConstant = function (fileName) {
