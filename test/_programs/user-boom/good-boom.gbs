@@ -1,0 +1,5 @@
+program {
+    Poner(Verde)
+    BOOM("Ahora sí se rompe todo")
+    Poner(Rojo)
+}
