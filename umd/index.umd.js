@@ -151,8 +151,12 @@ return /******/ (function(modules) { // webpackBootstrap
 	    }
 	
 	    define.symbol('(end)');
+	    define.symbol('"');
 	    define.symbol('(literal)').nud = function () {
 	        return new gbs.node.NumericLiteral(this, this.value);
+	    };
+	    define.symbol('(bleh)').nud = function () {
+	        return new gbs.node.Bleh(this, this.value);
 	    };
 	
 	    define.symbol('(name)').nud = function () {
@@ -265,11 +269,29 @@ return /******/ (function(modules) { // webpackBootstrap
 	    });
 	
 	    define.stmt(TOKEN_NAMES.BOOM, function () {
-	        var token = g.token;
-	        if (parenthesisExpression(g)) {
-	            gbs.errors.throwParserError(token, 'BOOM no lleva parámetros');
+	        g.advance('(');
+	
+	        var start = g.tokens.buf.indexOf('"', g.tokens.from - 1);
+	        if (start < 0) {
+	            gbs.errors.throwParserError(g.token, 'Se esperaba un mensaje de error entre comillas');
 	        }
-	        return new gbs.node.Boom(token);
+	
+	        g.advance('"');
+	
+	        var end = g.tokens.buf.indexOf('"', start + 1);
+	        if (end < 0) {
+	            gbs.errors.throwParserError(g.token, 'Se esperaba un cierre de comillas');
+	        }
+	
+	        var message = g.tokens.buf.substring(start + 1, end);
+	        while (g.token.id !== '"') {
+	            g.advance(null, true);
+	        }
+	        g.advance('"');
+	
+	        g.advance(')');
+	
+	        return new gbs.node.Boom(g.token, [message]);
 	    });
 	
 	    define.prefix(TOKEN_NAMES.HAS_STONES, function () {
@@ -585,7 +607,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	    return this.scope;
 	};
 	
-	Parser.prototype.advance = function (id) {
+	Parser.prototype.advance = function (id, asBleh) {
 	    var a;
 	    var o;
 	    var t;
@@ -621,6 +643,9 @@ return /******/ (function(modules) { // webpackBootstrap
 	        o = this.symbolTable['(literal)'];
 	        a = 'literal';
 	        v = parseInt(v, 10);
+	    } else if (asBleh) {
+	        o = this.symbolTable['(bleh)'];
+	        v = tokens.current;
 	    } else {
 	        errors.throwParserError(t, 'Unexpected token.');
 	    }
@@ -911,7 +936,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	    this.prefix = prefix || '/=-<>:|&.';
 	    this.suffix = suffix || '=|&>.';
 	
-	    this.punctuators = '/+-*^.:|&;,()<>{}[]=';
+	    this.punctuators = '/+-*^.:|&;,()<>{}[]="';
 	
 	    // Look ahead position
 	    this.i = 0;
@@ -1611,17 +1636,18 @@ return /******/ (function(modules) { // webpackBootstrap
 	        return context;
 	    };
 	
-	    node.Boom = function (token) {
+	    node.Boom = function (token, parameters) {
 	        this.token = token;
 	        this.arity = constants.STM;
 	        this.alias = 'BOOM';
+	        this.parameters = parameters;
 	    };
 	
 	    node.Boom.prototype.interpret = function (context) {
 	        try {
-	            context.board().boom();
+	            context.board().boom(this.parameters[0]);
 	        } catch (err) {
-	            err.on = node;
+	            err.on = this.token;
 	            throw err;
 	        }
 	        return context;
@@ -19125,8 +19151,8 @@ return /******/ (function(modules) { // webpackBootstrap
 	
 	// -------------
 	
-	Board.prototype.boom = function () {
-	    throw new GobstonesError('BOOM!', 'boom');
+	Board.prototype.boom = function (message) {
+	    throw new GobstonesError(message, {code: 'boom-called'});
 	};
 	
 	Board.prototype.amountStones = function (color) {
