@@ -1149,11 +1149,15 @@ return /******/ (function(modules) { // webpackBootstrap
 	}
 	
 	function _isAlpha(c) {
-	    return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c === '_' || c === '\'';
+	    return _isLetter(c) || c === '_' || c === '\'';
 	}
 	
 	function _isAlphanum(c) {
-	    return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c === '_' || c === '$';
+	    return _isLetter(c) || (c >= '0' && c <= '9') || c === '_' || c === '$';
+	}
+	
+	function _isLetter(c) {
+	    return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c === 'á' || c === 'é' || c === 'í' || c === 'ó' || c === 'ú' || c === 'ñ';
 	}
 	
 	module.exports = Lexer;
