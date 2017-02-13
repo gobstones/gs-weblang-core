@@ -52,3 +52,9 @@ var testUnexpectedConstant = function (fileName) {
 testUnexpectedConstant('unknown-constant-in-Poner.gbs');
 testUnexpectedConstant('unknown-constant-in-Sacar.gbs');
 testUnexpectedConstant('unknown-constant-in-Mover.gbs');
+
+utils.testProgramFailure('unknown-literal-in-Mover.gbs', function (t, reason) {
+    t.is(reason.message, 'El literal "CualquierCosa" no existe.');
+    t.deepEqual(reason.reason, {code: 'undefined_literal', detail: 'CualquierCosa'});
+    t.deepEqual(reason.on.range.start, {row: 1, column: 11});
+});
