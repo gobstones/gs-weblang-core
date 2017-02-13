@@ -1,0 +1,9 @@
+program {
+    Mover(Norte)
+    OtroContexto()
+    Mover(Sur)
+}
+
+procedure OtroContexto() {
+    Mover(Este)
+}

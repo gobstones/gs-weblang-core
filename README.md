@@ -49,8 +49,7 @@ parse("program { Mover(Norte)\nPoner(Azul) }");
 ```bash
 git checkout master
 git pull origin dev
-./node_modules/.bin/webpack
-./node_modules/.bin/webpack --output-file index.umd.min.js -p
+npm run-script build
 PACKAGE_VERSION=$(cat package.json \
   | grep version \
   | head -1 \
@@ -63,5 +62,4 @@ git push
 git tag $PACKAGE_VERSION
 git push --tags
 git checkout dev
-rm -rf umd
 ```
