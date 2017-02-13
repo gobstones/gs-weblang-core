@@ -22,6 +22,11 @@ test('Lexer recognizes names', function (t) {
     t.is(lexer.next().type, 'name');
 });
 
+test('Lexer recognizes names with latin characters', function (t) {
+    lexer.input('descarcañalaríamos');
+    t.is(lexer.next().type, 'name');
+});
+
 test('Lexer ignores line comments', function (t) {
     lexer.input('//some comment\n1');
     t.is(lexer.next().type, 'number');
