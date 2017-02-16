@@ -31,7 +31,7 @@ utils.testProgram('step-by-step.gbs', function (t, context) {
     t.is(snapshots[0].name, 'program');
 
     checkHeader(snapshots[1].board, 0, 1);
-    t.is(snapshots[1].name, 'OtroContexto');
+    t.is(snapshots[1].name.split('-')[0], 'OtroContexto');
 
     checkHeader(snapshots[2].board, 1, 1);
     t.is(snapshots[2].name, 'program');
