@@ -18975,6 +18975,10 @@ return /******/ (function(modules) { // webpackBootstrap
 	var _ = __webpack_require__(21);
 	var Board = __webpack_require__(24);
 	
+	var randomId = function () {
+	    return Math.floor((1 + Math.random()) * 0x10000);
+	};
+	
 	var Context = function () {
 	    var variablesStack = [];
 	    var boardsStack = [];
@@ -19007,7 +19011,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	    };
 	
 	    this.startContext = function (name) {
-	        namesStack.push(name);
+	        namesStack.push(name + '-' + randomId());
 	        variablesStack.push(currentVariables);
 	        currentVariables = {};
 	    };
