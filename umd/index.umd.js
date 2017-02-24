@@ -1214,8 +1214,12 @@ return /******/ (function(modules) { // webpackBootstrap
 	    };
 	    node.NumericLiteral.prototype.type = 'number';
 	
-	    node.NumericLiteral.prototype.eval = function () {
-	        return this.value;
+	    node.NumericLiteral.prototype.eval = function (context, options) {
+	        if (!options) {
+	            options = {attribute: 'value'};
+	        }
+	
+	        return options.attribute ? this[options.attribute] : this;
 	    };
 	};
 
@@ -1232,8 +1236,12 @@ return /******/ (function(modules) { // webpackBootstrap
 	        this.type = type;
 	    };
 	
-	    node.Constant.prototype.eval = function () {
-	        return this.value;
+	    node.Constant.prototype.eval = function (context, options) {
+	        if (!options) {
+	            options = {attribute: 'value'};
+	        }
+	
+	        return options.attribute ? this[options.attribute] : this;
 	    };
 	}
 	;
@@ -1546,10 +1554,16 @@ return /******/ (function(modules) { // webpackBootstrap
 /***/ function(module, exports) {
 
 	module.exports = function (node, constants) {
-	    var getValue = function (parameters, context) {
+	    var getValue = function (parameters, context, expectedType) {
 	        var parameter = parameters[0];
 	
-	        var value = parameter.eval(context);
+	        var finalNode = parameter.eval(context, {});
+	        var value = finalNode ? finalNode.value : undefined;
+	
+	        if (finalNode && finalNode.type !== expectedType) {
+	            throw new node.errors.InterpreterException('Se esperaba un valor de tipo "' + expectedType + '" pero se encontró uno de tipo "' + finalNode.type + '".', parameter.token, {code: 'type_mismatch', detail: {expected: expectedType, actual: finalNode.type}});
+	        }
+	
 	        if (value === undefined) {
 	            var name = parameter.token.value;
 	            var subject = (name[0] && name[0] === name[0].toUpperCase()) ?
@@ -1574,7 +1588,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	    };
 	
 	    node.MoveClaw.prototype.interpret = function (context) {
-	        var value = getValue(this.parameters, context);
+	        var value = getValue(this.parameters, context, 'Dirección');
 	
 	        try {
 	            context.board().move(value, snapshot(this, context));
@@ -1593,7 +1607,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	    };
 	
 	    node.RemoveStone.prototype.interpret = function (context) {
-	        var value = getValue(this.parameters, context);
+	        var value = getValue(this.parameters, context, 'Color');
 	
 	        try {
 	            context.board().removeStone(value, snapshot(this, context));
@@ -1612,7 +1626,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	    };
 	
 	    node.PutStone.prototype.interpret = function (context) {
-	        var value = getValue(this.parameters, context);
+	        var value = getValue(this.parameters, context, 'Color');
 	        context.board().putStone(value, snapshot(this, context));
 	        return context;
 	    };
@@ -1625,7 +1639,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	    };
 	
 	    node.MoveToEdge.prototype.interpret = function (context) {
-	        var value = getValue(this.parameters, context);
+	        var value = getValue(this.parameters, context, 'Dirección');
 	        context.board().moveToEdge(value, snapshot(this, context));
 	        return context;
 	    };
@@ -1666,11 +1680,11 @@ return /******/ (function(modules) { // webpackBootstrap
 /***/ function(module, exports) {
 
 	module.exports = function (node) {
-	    function evalArguments(context, parameters) {
+	    function evalArguments(context, parameters, options) {
 	        var results = [];
 	        if (parameters) {
 	            for (var i = 0; i < parameters.length; i++) {
-	                results.push(parameters[i].eval(context));
+	                results.push(parameters[i].eval(context, options));
 	            }
 	        }
 	        return results;
@@ -1719,18 +1733,18 @@ return /******/ (function(modules) { // webpackBootstrap
 	        this.declarationProvider = declarationProvider;
 	    };
 	
-	    node.FunctionCall.prototype.eval = function (context) {
+	    node.FunctionCall.prototype.eval = function (context, options) {
 	        var target = this.declarationProvider();
 	        if (!target.declaration) {
 	            throw new node.errors.InterpreterException('La función "' + this.name + '" no se encuentra definida.', this.token, {code: 'undefined_function', detail: this.name});
 	        }
 	        var declaration = target.declaration;
-	        var parameterValues = evalArguments(context, this.parameters);
+	        var parameterValues = evalArguments(context, this.parameters, options);
 	        context.startContext(this.name);
 	        context.pushBoard();
 	        fillParameters(context, parameterValues, declaration);
 	        node.interpretBlock(declaration.body, context);
-	        var result = declaration.return.expression.eval(context);
+	        var result = declaration.return.expression.eval(context, options);
 	        context.popBoard();
 	        context.stopContext();
 	        return result;
@@ -19162,7 +19176,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	// -------------
 	
 	Board.prototype.boom = function (message) {
-	    throw new GobstonesError(message, {code: 'boom-called'});
+	    throw new GobstonesError(message, {code: 'boom_called'});
 	};
 	
 	Board.prototype.amountStones = function (color) {
