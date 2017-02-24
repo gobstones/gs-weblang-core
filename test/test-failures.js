@@ -27,11 +27,13 @@ utils.testProgramFailure('returning-non-numeric-exit-code.gbs', function (t, rea
 utils.testProgramFailure('wrong-types/move-red.gbs', function (t, reason) {
     t.is(reason.message, 'Se esperaba un valor de tipo "Dirección" pero se encontró uno de tipo "Color".');
     t.deepEqual(reason.reason, {code: 'type_mismatch', detail: {expected: 'Dirección', actual: 'Color'}});
+    t.deepEqual(reason.on.range.start, {row: 5, column: 11});
 });
 
 utils.testProgramFailure('wrong-types/put-north.gbs', function (t, reason) {
     t.is(reason.message, 'Se esperaba un valor de tipo "Color" pero se encontró uno de tipo "Dirección".');
     t.deepEqual(reason.reason, {code: 'type_mismatch', detail: {expected: 'Color', actual: 'Dirección'}});
+    t.deepEqual(reason.on.range.start, {row: 5, column: 11});
 });
 
 utils.testProgramFailure('user-boom/good-boom.gbs', function (t, reason) {
