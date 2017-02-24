@@ -1,6 +1,6 @@
 {
   "name": "gs-weblang-core",
-  "version": "1.6.6",
+  "version": "1.6.7",
   "description": "Gobstones parser and interpreter",
   "repository": {
     "type": "git",
