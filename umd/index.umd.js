@@ -1554,14 +1554,14 @@ return /******/ (function(modules) { // webpackBootstrap
 /***/ function(module, exports) {
 
 	module.exports = function (node, constants) {
-	    var getValue = function (parameters, context, expectedType) {
+	    var getValue = function (token, parameters, context, expectedType) {
 	        var parameter = parameters[0];
 	
 	        var finalNode = parameter.eval(context, {});
 	        var value = finalNode ? finalNode.value : undefined;
 	
 	        if (finalNode && finalNode.type !== expectedType) {
-	            throw new node.errors.InterpreterException('Se esperaba un valor de tipo "' + expectedType + '" pero se encontró uno de tipo "' + finalNode.type + '".', parameter.token, {code: 'type_mismatch', detail: {expected: expectedType, actual: finalNode.type}});
+	            throw new node.errors.InterpreterException('Se esperaba un valor de tipo "' + expectedType + '" pero se encontró uno de tipo "' + finalNode.type + '".', token, {code: 'type_mismatch', detail: {expected: expectedType, actual: finalNode.type}});
 	        }
 	
 	        if (value === undefined) {
@@ -1588,7 +1588,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	    };
 	
 	    node.MoveClaw.prototype.interpret = function (context) {
-	        var value = getValue(this.parameters, context, 'Dirección');
+	        var value = getValue(this.token, this.parameters, context, 'Dirección');
 	
 	        try {
 	            context.board().move(value, snapshot(this, context));
@@ -1607,7 +1607,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	    };
 	
 	    node.RemoveStone.prototype.interpret = function (context) {
-	        var value = getValue(this.parameters, context, 'Color');
+	        var value = getValue(this.token, this.parameters, context, 'Color');
 	
 	        try {
 	            context.board().removeStone(value, snapshot(this, context));
@@ -1626,7 +1626,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	    };
 	
 	    node.PutStone.prototype.interpret = function (context) {
-	        var value = getValue(this.parameters, context, 'Color');
+	        var value = getValue(this.token, this.parameters, context, 'Color');
 	        context.board().putStone(value, snapshot(this, context));
 	        return context;
 	    };
@@ -1639,7 +1639,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	    };
 	
 	    node.MoveToEdge.prototype.interpret = function (context) {
-	        var value = getValue(this.parameters, context, 'Dirección');
+	        var value = getValue(this.token, this.parameters, context, 'Dirección');
 	        context.board().moveToEdge(value, snapshot(this, context));
 	        return context;
 	    };
