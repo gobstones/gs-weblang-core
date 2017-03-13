@@ -1558,12 +1558,12 @@ return /******/ (function(modules) { // webpackBootstrap
 	        var parameter = parameters[0];
 	
 	        var finalNode = parameter.eval(context, {});
-	        var value = (finalNode && finalNode.value) ? finalNode.value : finalNode;
+	        var value = (finalNode !== undefined && finalNode.value !== undefined) ? finalNode.value : finalNode;
 	
 	        // TODO: En routine-calls, al poner los argumentos en el context, se está guardando el value y no el node entero, entonces en esos casos no funciona el chequeo de tipos.
 	        // Y `finalNode` en lugar de ser un nodo termina siendo un número (el valor de Rojo, por ejemplo).
 	
-	        if (finalNode && finalNode.type && finalNode.type !== expectedType) {
+	        if (finalNode !== undefined && finalNode.type !== undefined && finalNode.type !== expectedType) {
 	            throw new node.errors.InterpreterException('Se esperaba un valor de tipo "' + expectedType + '" pero se encontró uno de tipo "' + finalNode.type + '".', token, {code: 'type_mismatch', detail: {expected: expectedType, actual: finalNode.type}});
 	        }
 	
