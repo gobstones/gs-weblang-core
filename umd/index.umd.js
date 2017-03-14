@@ -1594,7 +1594,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	
 	module.exports = function (node, constants) {
 	    var snapshot = function (node, context) {
-	        return {token: node.token, name: context.getCurrentName()};
+	        return {token: node.token, names: context.getCurrentNames()};
 	    };
 	
 	    node.MoveClaw = function (token, parameters) {
@@ -19085,8 +19085,8 @@ return /******/ (function(modules) { // webpackBootstrap
 	        currentBoard = boardsStack.pop();
 	    };
 	
-	    this.getCurrentName = function () {
-	        return _.last(namesStack);
+	    this.getCurrentNames = function () {
+	        return _.clone(namesStack);
 	    };
 	
 	    this.init();
