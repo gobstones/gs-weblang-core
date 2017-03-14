@@ -66,6 +66,12 @@ utils.testProgramFailure('wrong-types/inconsistent-assignment-2.gbs', function (
     t.deepEqual(reason.on.range.start, {row: 2, column: 5});
 });
 
+utils.testProgramFailure('wrong-types/wrong-arity.gbs', function (t, reason) {
+    t.is(reason.message, 'Se esperaban 2 argumentos pero se obtuvieron 1.');
+    t.deepEqual(reason.reason, {code: 'wrong_arity', detail: {expected: 2, actual: 1}});
+    t.deepEqual(reason.on.range.start, {row: 6, column: 5});
+});
+
 utils.testProgramFailure('user-boom/good-boom.gbs', function (t, reason) {
     t.is(reason.message, 'Ahora sí se rompe todo');
     t.is(reason.reason.code, 'boom_called');
