@@ -48,6 +48,12 @@ utils.testProgramFailure('wrong-types/put-north.gbs', function (t, reason) {
     t.deepEqual(reason.on.range.start, {row: 5, column: 10});
 });
 
+utils.testProgramFailure('wrong-types/numberofstones-east.gbs', function (t, reason) {
+    t.is(reason.message, 'Se esperaba un valor de tipo "Color" pero se encontró uno de tipo "Dirección".');
+    t.deepEqual(reason.reason, {code: 'type_mismatch', detail: {expected: 'Color', actual: 'Dirección'}});
+    t.deepEqual(reason.on.range.start, {row: 1, column: 20});
+});
+
 utils.testProgramFailure('user-boom/good-boom.gbs', function (t, reason) {
     t.is(reason.message, 'Ahora sí se rompe todo');
     t.is(reason.reason.code, 'boom_called');
@@ -81,4 +87,10 @@ utils.testProgramFailure('unknown-literal-in-Mover.gbs', function (t, reason) {
     t.is(reason.message, 'El literal "CualquierCosa" no existe.');
     t.deepEqual(reason.reason, {code: 'undefined_literal', detail: 'CualquierCosa'});
     t.deepEqual(reason.on.range.start, {row: 1, column: 11});
+});
+
+utils.testProgramFailure('unknown-literal-in-any-procedure.gbs', function (t, reason) {
+    t.is(reason.message, 'El literal "CualquierCosa" no existe.');
+    t.deepEqual(reason.reason, {code: 'undefined_literal', detail: 'CualquierCosa'});
+    t.deepEqual(reason.on.range.start, {row: 6, column: 16});
 });
