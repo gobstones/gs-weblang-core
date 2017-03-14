@@ -36,6 +36,12 @@ utils.testProgramFailure('wrong-types/move-red.gbs', function (t, reason) {
     t.deepEqual(reason.on.range.start, {row: 5, column: 10});
 });
 
+utils.testProgramFailure('wrong-types/move-red-by-parameter.gbs', function (t, reason) {
+    t.is(reason.message, 'Se esperaba un valor de tipo "Dirección" pero se encontró uno de tipo "Color".');
+    t.deepEqual(reason.reason, {code: 'type_mismatch', detail: {expected: 'Dirección', actual: 'Color'}});
+    t.deepEqual(reason.on.range.start, {row: 1, column: 10});
+});
+
 utils.testProgramFailure('wrong-types/put-north.gbs', function (t, reason) {
     t.is(reason.message, 'Se esperaba un valor de tipo "Color" pero se encontró uno de tipo "Dirección".');
     t.deepEqual(reason.reason, {code: 'type_mismatch', detail: {expected: 'Color', actual: 'Dirección'}});
