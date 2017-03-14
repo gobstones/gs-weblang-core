@@ -23,18 +23,21 @@ utils.testProgram('step-by-step.gbs', function (t, context) {
     };
 
     checkHeader(context.board(), 1, 0);
+    var onlyName = function (it) {
+        return it.split('-')[0];
+    };
 
     var snapshots = context.board().snapshots;
     t.is(snapshots.length, 3);
 
     checkHeader(snapshots[0].board, 0, 0);
-    t.is(snapshots[0].name, 'program');
+    t.deepEqual(snapshots[0].names, ['program']);
 
     checkHeader(snapshots[1].board, 0, 1);
-    t.is(snapshots[1].name.split('-')[0], 'OtroContexto');
+    t.deepEqual(snapshots[1].names.map(onlyName), ['program', 'OtroContexto']);
 
     checkHeader(snapshots[2].board, 1, 1);
-    t.is(snapshots[2].name, 'program');
+    t.deepEqual(snapshots[2].names, ['program']);
 });
 
 var testBasicProcedures = function (fileName) {

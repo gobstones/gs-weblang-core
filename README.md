@@ -48,7 +48,7 @@ parse("program { Mover(Norte)\nPoner(Azul) }");
 ### test in REPL
 
 ```js
-try { require("./lib/gbs").getParser().parse("function getDirection() { return(Rojo) } program { Mover(getDirection()) }").interpret(new (require("./lib/gbs").Context)()) } catch(e) { console.log(e) }
+try { require("./lib/gbs").getParser().parse(code).interpret(new (require("./lib/gbs").Context)()) } catch(e) { console.log(e) }
 ```
 
 ### deploy
