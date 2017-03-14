@@ -54,6 +54,18 @@ utils.testProgramFailure('wrong-types/numberofstones-east.gbs', function (t, rea
     t.deepEqual(reason.on.range.start, {row: 1, column: 20});
 });
 
+utils.testProgramFailure('wrong-types/inconsistent-assignment-1.gbs', function (t, reason) {
+    t.is(reason.message, 'No se puede asignar a "a" un valor de tipo "Dirección" ya que es de tipo "number".');
+    t.deepEqual(reason.reason, {code: 'inconsistent_assignment', detail: {expected: 'number', actual: 'Dirección'}});
+    t.deepEqual(reason.on.range.start, {row: 2, column: 5});
+});
+
+utils.testProgramFailure('wrong-types/inconsistent-assignment-2.gbs', function (t, reason) {
+    t.is(reason.message, 'No se puede asignar a "a" un valor de tipo "Color" ya que es de tipo "Dirección".');
+    t.deepEqual(reason.reason, {code: 'inconsistent_assignment', detail: {expected: 'Dirección', actual: 'Color'}});
+    t.deepEqual(reason.on.range.start, {row: 2, column: 5});
+});
+
 utils.testProgramFailure('user-boom/good-boom.gbs', function (t, reason) {
     t.is(reason.message, 'Ahora sí se rompe todo');
     t.is(reason.reason.code, 'boom_called');
