@@ -45,10 +45,17 @@ function parseAndInterpret(sourceCode) {
 parse("program { Mover(Norte)\nPoner(Azul) }");
 ```
 
+### test in REPL
+
+```js
+try { require("./lib/gbs").getParser().parse(code).interpret(new (require("./lib/gbs").Context)()) } catch(e) { console.log(e) }
+```
+
 ### deploy
 ```bash
 git checkout master
 git pull origin dev
+
 npm run-script build
 PACKAGE_VERSION=$(cat package.json \
   | grep version \
@@ -59,7 +66,9 @@ PACKAGE_VERSION=$(echo $PACKAGE_VERSION | xargs)
 git add -A .
 git commit -m "Bump $PACKAGE_VERSION"
 git push
+
 git tag $PACKAGE_VERSION
 git push --tags
+
 git checkout dev
 ```

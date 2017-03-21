@@ -1,0 +1,8 @@
+procedure MoveMoveTo(direction) {
+    Mover(direction)
+    Mover(direction)
+}
+
+program {
+    MoveMoveTo(Rojo)
+}

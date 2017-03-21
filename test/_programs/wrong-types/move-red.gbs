@@ -1,0 +1,7 @@
+function getDirection() {
+    return(Rojo)
+}
+
+program {
+    Mover(getDirection())
+}

@@ -1,0 +1,4 @@
+program {
+    a := Este
+    a := Azul
+}

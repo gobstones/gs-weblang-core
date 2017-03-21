@@ -1,0 +1,7 @@
+function getColor() {
+    return(Norte)
+}
+
+program {
+    Poner(getColor())
+}

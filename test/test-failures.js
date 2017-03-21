@@ -24,9 +24,57 @@ utils.testProgramFailure('returning-non-numeric-exit-code.gbs', function (t, rea
     t.deepEqual(reason.on.range.start, {row: 3, column: 11});
 });
 
+utils.testProgramFailure('wrong-types/basic-move-red.gbs', function (t, reason) {
+    t.is(reason.message, 'Se esperaba un valor de tipo "Dirección" pero se encontró uno de tipo "Color".');
+    t.deepEqual(reason.reason, {code: 'type_mismatch', detail: {expected: 'Dirección', actual: 'Color'}});
+    t.deepEqual(reason.on.range.start, {row: 1, column: 10});
+});
+
+utils.testProgramFailure('wrong-types/move-red.gbs', function (t, reason) {
+    t.is(reason.message, 'Se esperaba un valor de tipo "Dirección" pero se encontró uno de tipo "Color".');
+    t.deepEqual(reason.reason, {code: 'type_mismatch', detail: {expected: 'Dirección', actual: 'Color'}});
+    t.deepEqual(reason.on.range.start, {row: 5, column: 10});
+});
+
+utils.testProgramFailure('wrong-types/move-red-by-parameter.gbs', function (t, reason) {
+    t.is(reason.message, 'Se esperaba un valor de tipo "Dirección" pero se encontró uno de tipo "Color".');
+    t.deepEqual(reason.reason, {code: 'type_mismatch', detail: {expected: 'Dirección', actual: 'Color'}});
+    t.deepEqual(reason.on.range.start, {row: 1, column: 10});
+});
+
+utils.testProgramFailure('wrong-types/put-north.gbs', function (t, reason) {
+    t.is(reason.message, 'Se esperaba un valor de tipo "Color" pero se encontró uno de tipo "Dirección".');
+    t.deepEqual(reason.reason, {code: 'type_mismatch', detail: {expected: 'Color', actual: 'Dirección'}});
+    t.deepEqual(reason.on.range.start, {row: 5, column: 10});
+});
+
+utils.testProgramFailure('wrong-types/numberofstones-east.gbs', function (t, reason) {
+    t.is(reason.message, 'Se esperaba un valor de tipo "Color" pero se encontró uno de tipo "Dirección".');
+    t.deepEqual(reason.reason, {code: 'type_mismatch', detail: {expected: 'Color', actual: 'Dirección'}});
+    t.deepEqual(reason.on.range.start, {row: 1, column: 20});
+});
+
+utils.testProgramFailure('wrong-types/inconsistent-assignment-1.gbs', function (t, reason) {
+    t.is(reason.message, 'No se puede asignar a "a" un valor de tipo "Dirección" ya que es de tipo "number".');
+    t.deepEqual(reason.reason, {code: 'inconsistent_assignment', detail: {expected: 'number', actual: 'Dirección'}});
+    t.deepEqual(reason.on.range.start, {row: 2, column: 5});
+});
+
+utils.testProgramFailure('wrong-types/inconsistent-assignment-2.gbs', function (t, reason) {
+    t.is(reason.message, 'No se puede asignar a "a" un valor de tipo "Color" ya que es de tipo "Dirección".');
+    t.deepEqual(reason.reason, {code: 'inconsistent_assignment', detail: {expected: 'Dirección', actual: 'Color'}});
+    t.deepEqual(reason.on.range.start, {row: 2, column: 5});
+});
+
+utils.testProgramFailure('wrong-types/wrong-arity.gbs', function (t, reason) {
+    t.is(reason.message, 'Se esperaban 2 argumentos pero se obtuvieron 1.');
+    t.deepEqual(reason.reason, {code: 'wrong_arity', detail: {expected: 2, actual: 1}});
+    t.deepEqual(reason.on.range.start, {row: 6, column: 5});
+});
+
 utils.testProgramFailure('user-boom/good-boom.gbs', function (t, reason) {
     t.is(reason.message, 'Ahora sí se rompe todo');
-    t.is(reason.reason.code, 'boom-called');
+    t.is(reason.reason.code, 'boom_called');
 });
 
 utils.testProgramFailure('user-boom/without-parameters.gbs', function (t, reason) {
@@ -52,3 +100,15 @@ var testUnexpectedConstant = function (fileName) {
 testUnexpectedConstant('unknown-constant-in-Poner.gbs');
 testUnexpectedConstant('unknown-constant-in-Sacar.gbs');
 testUnexpectedConstant('unknown-constant-in-Mover.gbs');
+
+utils.testProgramFailure('unknown-literal-in-Mover.gbs', function (t, reason) {
+    t.is(reason.message, 'El literal "CualquierCosa" no existe.');
+    t.deepEqual(reason.reason, {code: 'undefined_literal', detail: 'CualquierCosa'});
+    t.deepEqual(reason.on.range.start, {row: 1, column: 11});
+});
+
+utils.testProgramFailure('unknown-literal-in-any-procedure.gbs', function (t, reason) {
+    t.is(reason.message, 'El literal "CualquierCosa" no existe.');
+    t.deepEqual(reason.reason, {code: 'undefined_literal', detail: 'CualquierCosa'});
+    t.deepEqual(reason.on.range.start, {row: 6, column: 16});
+});

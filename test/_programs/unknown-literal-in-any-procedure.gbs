@@ -1,0 +1,8 @@
+procedure MoverMover(direccion) {
+    Mover(direccion)
+    Mover(direccion)
+}
+
+program {
+    MoverMover(CualquierCosa)
+}
