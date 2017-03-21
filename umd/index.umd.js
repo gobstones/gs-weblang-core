@@ -61,14 +61,14 @@ return /******/ (function(modules) { // webpackBootstrap
 	gbs.Lexer = __webpack_require__(6);
 	gbs.node = __webpack_require__(7);
 	gbs.errors = __webpack_require__(4);
-	gbs.Context = __webpack_require__(23);
-	gbs.Board = __webpack_require__(24);
+	gbs.Context = __webpack_require__(24);
+	gbs.Board = __webpack_require__(25);
 	
 	gbs.gbb = {
-	    reader: __webpack_require__(26),
-	    builder: __webpack_require__(28)
+	    reader: __webpack_require__(27),
+	    builder: __webpack_require__(29)
 	};
-	gbs.viewAdapter = __webpack_require__(25);
+	gbs.viewAdapter = __webpack_require__(26);
 	
 	gbs.getParser = function () {
 	    return grammar(gbs);
@@ -1149,11 +1149,15 @@ return /******/ (function(modules) { // webpackBootstrap
 	}
 	
 	function _isAlpha(c) {
-	    return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c === '_' || c === '\'';
+	    return _isLetter(c) || c === '_' || c === '\'';
 	}
 	
 	function _isAlphanum(c) {
-	    return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c === '_' || c === '$';
+	    return _isLetter(c) || (c >= '0' && c <= '9') || c === '_' || c === '$';
+	}
+	
+	function _isLetter(c) {
+	    return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c === 'á' || c === 'é' || c === 'í' || c === 'ó' || c === 'ú' || c === 'ñ';
 	}
 	
 	module.exports = Lexer;
@@ -1189,11 +1193,11 @@ return /******/ (function(modules) { // webpackBootstrap
 	__webpack_require__(13)(node, constants);
 	__webpack_require__(14)(node, constants);
 	__webpack_require__(15)(node, constants);
-	__webpack_require__(16)(node, constants);
 	__webpack_require__(17)(node, constants);
 	__webpack_require__(18)(node, constants);
 	__webpack_require__(19)(node, constants);
 	__webpack_require__(20)(node, constants);
+	__webpack_require__(21)(node, constants);
 	
 	module.exports = node;
 
@@ -1210,8 +1214,12 @@ return /******/ (function(modules) { // webpackBootstrap
 	    };
 	    node.NumericLiteral.prototype.type = 'number';
 	
-	    node.NumericLiteral.prototype.eval = function () {
-	        return this.value;
+	    node.NumericLiteral.prototype.eval = function (context, options) {
+	        if (!options) {
+	            options = {attribute: 'value'};
+	        }
+	
+	        return options.attribute ? this[options.attribute] : this;
 	    };
 	};
 
@@ -1228,8 +1236,12 @@ return /******/ (function(modules) { // webpackBootstrap
 	        this.type = type;
 	    };
 	
-	    node.Constant.prototype.eval = function () {
-	        return this.value;
+	    node.Constant.prototype.eval = function (context, options) {
+	        if (!options) {
+	            options = {attribute: 'value'};
+	        }
+	
+	        return options.attribute ? this[options.attribute] : this;
 	    };
 	}
 	;
@@ -1245,8 +1257,13 @@ return /******/ (function(modules) { // webpackBootstrap
 	        this.value = id;
 	    };
 	
-	    node.Variable.prototype.eval = function (context) {
-	        return context.get(this.value);
+	    node.Variable.prototype.eval = function (context, options) {
+	        if (!options) {
+	            options = {method: 'get'};
+	        }
+	
+	        var key = this.value;
+	        return options.method ? context[options.method](key) : context.getNode(key);
 	    };
 	
 	    return node;
@@ -1267,7 +1284,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	    };
 	
 	    node.Assignment.prototype.interpret = function (context) {
-	        context.put(this.left.token.value, this.right.eval(context));
+	        context.put(this.left.token.value, this.right.eval(context, {}), node, this.left.token);
 	    };
 	};
 
@@ -1433,8 +1450,10 @@ return /******/ (function(modules) { // webpackBootstrap
 
 /***/ },
 /* 15 */
-/***/ function(module, exports) {
+/***/ function(module, exports, __webpack_require__) {
 
+	var getValue = __webpack_require__(16);
+	
 	module.exports = function (node, constants) {
 	    node.HasStones = function (token, parameters) {
 	        this.token = token;
@@ -1444,7 +1463,8 @@ return /******/ (function(modules) { // webpackBootstrap
 	    };
 	
 	    node.HasStones.prototype.eval = function (context) {
-	        return context.board().amountStones(this.parameters[0].eval(context)) > 0;
+	        var value = getValue(node, this.token, this.parameters, context, 'Color');
+	        return context.board().amountStones(value) > 0;
 	    };
 	
 	    node.CanMove = function (token, parameters) {
@@ -1455,7 +1475,8 @@ return /******/ (function(modules) { // webpackBootstrap
 	    };
 	
 	    node.CanMove.prototype.eval = function (context) {
-	        return context.board().canMove(this.parameters[0].eval(context));
+	        var value = getValue(node, this.token, this.parameters, context, 'Dirección');
+	        return context.board().canMove(value);
 	    };
 	
 	    node.NumStones = function (token, parameters) {
@@ -1466,7 +1487,8 @@ return /******/ (function(modules) { // webpackBootstrap
 	    };
 	
 	    node.NumStones.prototype.eval = function (context) {
-	        return context.board().amountStones(this.parameters[0].eval(context));
+	        var value = getValue(node, this.token, this.parameters, context, 'Color');
+	        return context.board().amountStones(value);
 	    };
 	
 	    node.MinDir = function (token, parameters) {
@@ -1541,20 +1563,38 @@ return /******/ (function(modules) { // webpackBootstrap
 /* 16 */
 /***/ function(module, exports) {
 
+	module.exports = function (node, token, parameters, context, expectedType, options) {
+	    var parameter = parameters[0];
+	
+	    var finalNode = parameter.eval(context, {});
+	    var value = (finalNode !== undefined && finalNode.value !== undefined) ? finalNode.value : finalNode;
+	
+	    if (finalNode !== undefined && finalNode.type !== undefined && expectedType !== undefined && finalNode.type !== expectedType) {
+	        throw new node.errors.InterpreterException('Se esperaba un valor de tipo "' + expectedType + '" pero se encontró uno de tipo "' + finalNode.type + '".', token, {code: 'type_mismatch', detail: {expected: expectedType, actual: finalNode.type}});
+	    }
+	
+	    if (value === undefined) {
+	        var name = parameter.token.value;
+	        var subject = (name[0] && name[0] === name[0].toUpperCase()) ?
+	            {name: 'El literal', code: 'undefined_literal'} :
+	            {name: 'El nombre', code: 'undefined_variable'};
+	
+	        throw new node.errors.InterpreterException(subject.name + ' "' + parameter.token.value + '" no existe.', parameter.token, {code: subject.code, detail: parameter.token.value});
+	    }
+	
+	    return parameter.eval(context, options);
+	};
+
+
+/***/ },
+/* 17 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var getValue = __webpack_require__(16);
+	
 	module.exports = function (node, constants) {
-	    var getValue = function (parameters, context) {
-	        var parameter = parameters[0];
-	
-	        var value = parameter.eval(context);
-	        if (value === undefined) {
-	            throw new node.errors.InterpreterException('El nombre "' + parameter.token.value + '" no existe.', parameter.token, {code: 'undefined_variable', detail: parameter.token.value});
-	        }
-	
-	        return value;
-	    };
-	
 	    var snapshot = function (node, context) {
-	        return {token: node.token, name: context.getCurrentName()};
+	        return {token: node.token, names: context.getCurrentNames()};
 	    };
 	
 	    node.MoveClaw = function (token, parameters) {
@@ -1565,7 +1605,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	    };
 	
 	    node.MoveClaw.prototype.interpret = function (context) {
-	        var value = getValue(this.parameters, context);
+	        var value = getValue(node, this.token, this.parameters, context, 'Dirección');
 	
 	        try {
 	            context.board().move(value, snapshot(this, context));
@@ -1584,7 +1624,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	    };
 	
 	    node.RemoveStone.prototype.interpret = function (context) {
-	        var value = getValue(this.parameters, context);
+	        var value = getValue(node, this.token, this.parameters, context, 'Color');
 	
 	        try {
 	            context.board().removeStone(value, snapshot(this, context));
@@ -1603,7 +1643,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	    };
 	
 	    node.PutStone.prototype.interpret = function (context) {
-	        var value = getValue(this.parameters, context);
+	        var value = getValue(node, this.token, this.parameters, context, 'Color');
 	        context.board().putStone(value, snapshot(this, context));
 	        return context;
 	    };
@@ -1616,7 +1656,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	    };
 	
 	    node.MoveToEdge.prototype.interpret = function (context) {
-	        var value = getValue(this.parameters, context);
+	        var value = getValue(node, this.token, this.parameters, context, 'Dirección');
 	        context.board().moveToEdge(value, snapshot(this, context));
 	        return context;
 	    };
@@ -1653,25 +1693,31 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 17 */
-/***/ function(module, exports) {
+/* 18 */
+/***/ function(module, exports, __webpack_require__) {
 
+	var getValue = __webpack_require__(16);
+	
 	module.exports = function (node) {
-	    function evalArguments(context, parameters) {
+	    function evalArguments(token, context, parameters, options) {
 	        var results = [];
 	        if (parameters) {
 	            for (var i = 0; i < parameters.length; i++) {
-	                results.push(parameters[i].eval(context));
+	                var value = getValue(node, token, [parameters[i]], context, undefined, options);
+	                results.push(value);
 	            }
 	        }
 	        return results;
 	    }
 	
-	    function fillParameters(context, parameters, declaration) {
+	    function fillParameters(context, parameters, declaration, node, token) {
 	        // TODO: no se pueden reasignar valores a los parámetros
 	        if (declaration.parameters) {
+	            if (declaration.parameters.length !== parameters.length) {
+	                throw new node.errors.InterpreterException('Se esperaban ' + declaration.parameters.length + ' argumentos pero se obtuvieron ' + parameters.length + '.', token, {code: 'wrong_arity', detail: {expected: declaration.parameters.length, actual: parameters.length}});
+	            }
 	            for (var i = 0; i < declaration.parameters.length; i++) {
-	                context.put(declaration.parameters[i].value, parameters[i]);
+	                context.put(declaration.parameters[i].value, parameters[i], node, token);
 	            }
 	        }
 	    }
@@ -1693,9 +1739,9 @@ return /******/ (function(modules) { // webpackBootstrap
 	            throw new node.errors.InterpreterException('El procedimiento ' + this.name + ' no se encuentra definido.', this, {code: 'undefined_procedure', detail: this.name});
 	        }
 	        var declaration = target.declaration;
-	        var parameterValues = evalArguments(context, this.parameters);
+	        var parameterValues = evalArguments(this.token, context, this.parameters, {});
 	        context.startContext(this.name);
-	        fillParameters(context, parameterValues, declaration);
+	        fillParameters(context, parameterValues, declaration, node, this.token);
 	        node.interpretBlock(declaration.body, context);
 	        context.stopContext();
 	        return context;
@@ -1710,18 +1756,18 @@ return /******/ (function(modules) { // webpackBootstrap
 	        this.declarationProvider = declarationProvider;
 	    };
 	
-	    node.FunctionCall.prototype.eval = function (context) {
+	    node.FunctionCall.prototype.eval = function (context, options) {
 	        var target = this.declarationProvider();
 	        if (!target.declaration) {
 	            throw new node.errors.InterpreterException('La función "' + this.name + '" no se encuentra definida.', this.token, {code: 'undefined_function', detail: this.name});
 	        }
 	        var declaration = target.declaration;
-	        var parameterValues = evalArguments(context, this.parameters);
+	        var parameterValues = evalArguments(this.token, context, this.parameters, {});
 	        context.startContext(this.name);
 	        context.pushBoard();
-	        fillParameters(context, parameterValues, declaration);
+	        fillParameters(context, parameterValues, declaration, node, this.token);
 	        node.interpretBlock(declaration.body, context);
-	        var result = declaration.return.expression.eval(context);
+	        var result = declaration.return.expression.eval(context, options);
 	        context.popBoard();
 	        context.stopContext();
 	        return result;
@@ -1731,7 +1777,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 18 */
+/* 19 */
 /***/ function(module, exports) {
 
 	module.exports = function (node) {
@@ -1768,7 +1814,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 19 */
+/* 20 */
 /***/ function(module, exports) {
 
 	module.exports = function (node) {
@@ -1811,7 +1857,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	
 	    node.ForEach.prototype.interpret = function (context) {
 	        for (var i = 0; i < this.items.length; i++) {
-	            context.put(this.iterator.token.value, this.items[i].eval(context));
+	            context.put(this.iterator.token.value, this.items[i].eval(context, {}), node, this.token);
 	            node.interpretBlock(this.body, context);
 	        }
 	
@@ -1821,10 +1867,10 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 20 */
+/* 21 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var _ = __webpack_require__(21);
+	var _ = __webpack_require__(22);
 	
 	module.exports = function (node) {
 	    node.Program = function (token, body) {
@@ -1872,7 +1918,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 21 */
+/* 22 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_RESULT__;/* WEBPACK VAR INJECTION */(function(global, module) {/**
@@ -18941,10 +18987,10 @@ return /******/ (function(modules) { // webpackBootstrap
 	  }
 	}.call(this));
 	
-	/* WEBPACK VAR INJECTION */}.call(exports, (function() { return this; }()), __webpack_require__(22)(module)))
+	/* WEBPACK VAR INJECTION */}.call(exports, (function() { return this; }()), __webpack_require__(23)(module)))
 
 /***/ },
-/* 22 */
+/* 23 */
 /***/ function(module, exports) {
 
 	module.exports = function(module) {
@@ -18960,11 +19006,24 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 23 */
+/* 24 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var _ = __webpack_require__(21);
-	var Board = __webpack_require__(24);
+	var _ = __webpack_require__(22);
+	var Board = __webpack_require__(25);
+	
+	var randomId = function () {
+	    return Math.floor((1 + Math.random()) * 0x10000);
+	};
+	
+	var wrap = function (value) {
+	    return _.isNumber(value) ?
+	      {type: 'number', value: value} :
+	      (_.isBoolean(value) ?
+	        {type: 'boolean', value: value} :
+	        value
+	      );
+	};
 	
 	var Context = function () {
 	    var variablesStack = [];
@@ -18985,12 +19044,21 @@ return /******/ (function(modules) { // webpackBootstrap
 	        return currentBoard;
 	    };
 	
-	    this.put = function (key, value) {
+	    this.put = function (key, value, node, token) {
+	        var existingVariable = this.getNode(key);
+	        var type = wrap(value).type;
+	        if (existingVariable !== undefined && existingVariable.type !== undefined && type !== undefined && existingVariable.type !== type) {
+	            throw new node.errors.InterpreterException('No se puede asignar a "' + key + '" un valor de tipo "' + type + '" ya que es de tipo "' + existingVariable.type + '".', token, {code: 'inconsistent_assignment', detail: {expected: existingVariable.type, actual: type}});
+	        }
 	        currentVariables[key] = value;
 	    };
 	
 	    this.get = function (id) {
-	        return currentVariables[id];
+	        return this.getNode(id).value;
+	    };
+	
+	    this.getNode = function (id) {
+	        return wrap(currentVariables[id]);
 	    };
 	
 	    this.all = function () {
@@ -18998,7 +19066,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	    };
 	
 	    this.startContext = function (name) {
-	        namesStack.push(name);
+	        namesStack.push(name + '-' + randomId());
 	        variablesStack.push(currentVariables);
 	        currentVariables = {};
 	    };
@@ -19017,8 +19085,8 @@ return /******/ (function(modules) { // webpackBootstrap
 	        currentBoard = boardsStack.pop();
 	    };
 	
-	    this.getCurrentName = function () {
-	        return _.last(namesStack);
+	    this.getCurrentNames = function () {
+	        return _.clone(namesStack);
 	    };
 	
 	    this.init();
@@ -19028,10 +19096,10 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 24 */
+/* 25 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var viewAdapter = __webpack_require__(25);
+	var viewAdapter = __webpack_require__(26);
 	
 	var GobstonesError = function (message, reason) {
 	    this.message = message;
@@ -19149,7 +19217,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	// -------------
 	
 	Board.prototype.boom = function (message) {
-	    throw new GobstonesError(message, {code: 'boom-called'});
+	    throw new GobstonesError(message, {code: 'boom_called'});
 	};
 	
 	Board.prototype.amountStones = function (color) {
@@ -19195,10 +19263,10 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 25 */
+/* 26 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var _ = __webpack_require__(21);
+	var _ = __webpack_require__(22);
 	
 	var viewAdapter = {
 	};
@@ -19252,11 +19320,11 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 26 */
+/* 27 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var Board = __webpack_require__(24);
-	var stringUtils = __webpack_require__(27);
+	var Board = __webpack_require__(25);
+	var stringUtils = __webpack_require__(28);
 	
 	var gbbReader = {
 	};
@@ -19358,7 +19426,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 27 */
+/* 28 */
 /***/ function(module, exports) {
 
 	module.exports = {
@@ -19384,7 +19452,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 28 */
+/* 29 */
 /***/ function(module, exports) {
 
 	var gbbWriter = {
