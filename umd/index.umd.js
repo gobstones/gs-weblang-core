@@ -1157,7 +1157,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	}
 	
 	function _isLetter(c) {
-	    return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c === 'á' || c === 'é' || c === 'í' || c === 'ó' || c === 'ú' || c === 'ñ';
+	    return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c === 'á' || c === 'é' || c === 'í' || c === 'ó' || c === 'ú' || c === 'ñ' || c === 'Á' || c === 'É' || c === 'Í' || c === 'Ó' || c === 'Ú' || c === 'Ñ';
 	}
 	
 	module.exports = Lexer;
