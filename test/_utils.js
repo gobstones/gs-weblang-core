@@ -13,8 +13,7 @@ utils.runProgram = function (fileName) {
     var file = utils.getFile(fileName);
     var ast = g.getParser().parse(file);
     var context = new Context();
-    ast.interpret(context);
-    return context;
+    return ast.interpret(context);
 };
 
 utils.testProgram = function (fileName, asserts) {
