@@ -1,0 +1,3 @@
+interactive program {
+    K_SHIFT_D -> { a := 33 }
+}
