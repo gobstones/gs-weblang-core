@@ -112,3 +112,7 @@ utils.testProgramFailure('unknown-literal-in-any-procedure.gbs', function (t, re
     t.deepEqual(reason.reason, {code: 'undefined_literal', detail: 'CualquierCosa'});
     t.deepEqual(reason.on.range.start, {row: 6, column: 16});
 });
+
+utils.testProgramFailure('interactive/wrong-keys.gbs', function (t, reason) {
+    t.is(reason.error, 'La rama número 2 no es una tecla válida');
+});
