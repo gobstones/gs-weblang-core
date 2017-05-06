@@ -1,0 +1,4 @@
+interactive program {
+    K_2 -> { Poner(Rojo) }
+    TECLA_CUALQUIERA -> { a := 33 }
+}
