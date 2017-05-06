@@ -57,18 +57,18 @@ return /******/ (function(modules) { // webpackBootstrap
 	var gbs = {};
 	var grammar = __webpack_require__(1);
 	
-	gbs.Parser = __webpack_require__(3);
-	gbs.Lexer = __webpack_require__(6);
-	gbs.node = __webpack_require__(7);
-	gbs.errors = __webpack_require__(4);
-	gbs.Context = __webpack_require__(24);
-	gbs.Board = __webpack_require__(25);
+	gbs.Parser = __webpack_require__(6);
+	gbs.Lexer = __webpack_require__(9);
+	gbs.node = __webpack_require__(10);
+	gbs.errors = __webpack_require__(7);
+	gbs.Context = __webpack_require__(27);
+	gbs.Board = __webpack_require__(28);
 	
 	gbs.gbb = {
-	    reader: __webpack_require__(27),
-	    builder: __webpack_require__(29)
+	    reader: __webpack_require__(30),
+	    builder: __webpack_require__(32)
 	};
-	gbs.viewAdapter = __webpack_require__(26);
+	gbs.viewAdapter = __webpack_require__(29);
 	
 	gbs.getParser = function () {
 	    return grammar(gbs);
@@ -81,11 +81,33 @@ return /******/ (function(modules) { // webpackBootstrap
 /* 1 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var TOKEN_NAMES = __webpack_require__(2);
+	var isValidKey = __webpack_require__(2);
+	var TOKEN_NAMES = __webpack_require__(5);
 	
 	module.exports = function (gbs) {
 	    var g = new gbs.Parser(new gbs.Lexer());
 	    var define = g;
+	
+	    function switchCases() {
+	        g.advance('{');
+	
+	        var cases = [];
+	        for (; ;) {
+	            var exp = g.expression(0);
+	            g.advance('->');
+	            var body = bodyStatementWithOptionalMultiline(g);
+	            cases.push({
+	                case: exp,
+	                body: body
+	            });
+	            if (g.token.id === '}' || !g.tokens.hasNext()) {
+	                break;
+	            }
+	        }
+	        g.advance('}');
+	
+	        return cases;
+	    }
 	
 	    function commaSeparatedArguments(parser) {
 	        var parameters = [];
@@ -350,22 +372,8 @@ return /******/ (function(modules) { // webpackBootstrap
 	        if (g.token.id === TOKEN_NAMES.TO) {
 	            g.advance(TOKEN_NAMES.TO);
 	        }
-	        g.advance('{');
-	        var cases = [];
-	        for (; ;) {
-	            var exp = g.expression(0);
-	            g.advance('->');
-	            var body = bodyStatementWithOptionalMultiline(g);
-	            cases.push({
-	                case: exp,
-	                body: body
-	            });
-	            if (g.token.id === '}' || !g.tokens.hasNext()) {
-	                break;
-	            }
-	        }
-	        g.advance('}');
-	        return new gbs.node.Switch(token, condition, cases);
+	
+	        return new gbs.node.Switch(token, condition, switchCases());
 	    });
 	
 	    define.stmt(TOKEN_NAMES.WHILE, function () {
@@ -411,12 +419,26 @@ return /******/ (function(modules) { // webpackBootstrap
 	        return new gbs.node.Program(g.token, g.block());
 	    });
 	
+	    define.root(TOKEN_NAMES.INTERACTIVE, function () {
+	        g.advance('program');
+	        var token = g.token;
+	
+	        var cases = switchCases();
+	        cases.forEach(function (it, i) {
+	            if (typeof it.case.value !== 'string' || !isValidKey(it.case.value)) {
+	                g.error(token, 'La rama número ' + (i + 1) + ' no es una tecla válida');
+	            }
+	        });
+	
+	        return new gbs.node.InteractiveProgram(token, cases);
+	    });
+	
 	    define.root(TOKEN_NAMES.FUNCTION, function () {
 	        g.newScope();
 	        var token = g.token;
 	        if (g.token.arity === 'name') {
 	            if (g.token.value[0] !== g.token.value[0].toLowerCase()) {
-	                g.error(token, 'El nombre de la función ' + token.value + ' debe emepzar con minúscula');
+	                g.error(token, 'El nombre de la función ' + token.value + ' debe empezar con minúscula');
 	            }
 	            g.scope.define(token);
 	            g.advance();
@@ -445,7 +467,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	        var token = g.token;
 	        if (g.token.arity === 'name') {
 	            if (g.token.value[0] !== g.token.value[0].toUpperCase()) {
-	                g.error(token, 'El nombre del procedimiento ' + token.value + ' debe emepzar con mayúscula');
+	                g.error(token, 'El nombre del procedimiento ' + token.value + ' debe empezar con mayúscula');
 	            }
 	            g.scope.define(token);
 	            g.advance();
@@ -461,17 +483,18 @@ return /******/ (function(modules) { // webpackBootstrap
 	    });
 	
 	    define.parse = function (input) {
-	        var main;
+	        var program;
 	        var declarations = [];
 	        var roots = g.parseProgram(input);
 	        for (var i = 0; i < roots.length; i++) {
-	            if (roots[i].alias === 'program') {
-	                main = roots[i];
+	            if (roots[i].alias === 'program' || roots[i].alias === 'interactiveProgram') {
+	                program = roots[i];
 	            } else {
 	                declarations.push(roots[i]);
 	            }
 	        }
-	        return new gbs.node.Root(main, declarations);
+	
+	        return new gbs.node.Root(program, declarations);
 	    };
 	
 	    return g;
@@ -480,1445 +503,39 @@ return /******/ (function(modules) { // webpackBootstrap
 
 /***/ },
 /* 2 */
-/***/ function(module, exports) {
+/***/ function(module, exports, __webpack_require__) {
 
-	var TOKEN_NAMES = {
-	    PROGRAM: 'program',
-	    PROCEDURE: 'procedure',
-	    FUNCTION: 'function',
-	    RETURN: 'return',
-	    DROP: 'Poner',
-	    MOVE: 'Mover',
-	    GRAB: 'Sacar',
-	    BOOM: 'BOOM',
-	    MOVE_TO_EDGE: 'IrAlBorde',
-	    CLEAN_BOARD: 'VaciarTablero',
-	    REPEAT: 'repeat',
-	    WHILE: 'while',
-	    FOR_EACH: 'foreach',
-	    IN: 'in',
-	    IF: 'if',
-	    THEN: 'then',
-	    ELSE: 'else',
-	    SWITCH: 'switch',
-	    TO: 'to',
-	    OPPOSITE: 'opuesto',
-	    NEXT: 'siguiente',
-	    PREVIOUS: 'previo',
-	    DIV: 'div',
-	    MOD: 'mod',
-	    NOT: 'not',
-	    HAS_STONES: 'hayBolitas',
-	    CAN_MOVE: 'puedeMover',
-	    NUM_STONES: 'nroBolitas',
-	    MIN_DIR: 'minDir',
-	    MAX_DIR: 'maxDir',
-	    MIN_COLOR: 'minColor',
-	    MAX_COLOR: 'maxColor',
-	    MIN_BOOL: 'minBool',
-	    MAX_BOOL: 'maxBool',
-	    RED: 'Rojo',
-	    BLUE: 'Azul',
-	    BLACK: 'Negro',
-	    GREEN: 'Verde',
-	    TRUE: 'True',
-	    FALSE: 'False',
-	    NORTH: 'Norte',
-	    SOUTH: 'Sur',
-	    EAST: 'Este',
-	    WEST: 'Oeste',
-	    BOOLEAN: 'Booleano',
-	    COLOR: 'Color',
-	    DIRECTION: 'Dirección',
-	    NUMBER: 'Número'
+	var _ = __webpack_require__(3);
+	
+	var ARROW_KEYS = ['ARROW_LEFT', 'ARROW_RIGHT', 'ARROW_UP', 'ARROW_DOWN'];
+	var SPECIAL_KEYS = ['SPACE', 'ENTER', 'TAB', 'BACKSPACE', 'DELETE', 'ESCAPE'];
+	var SYMBOL_KEYS = ['PLUS', 'MINUS', 'ASTERISK', 'SLASH', 'EQUALS', 'L_PARENT', 'R_PARENT', 'L_BRACKET', 'R_BRACKET', 'L_ANGLEBR', 'R_ANGLEBR'].concat(ARROW_KEYS);
+	var MODIFIERS = ['', 'CTRL', 'ALT', 'SHIFT', 'CTRL_ALT', 'CTRL_SHIFT', 'ALT_SHIFT', 'CTRL_ALT_SHIFT'];
+	
+	var isUpperChar = function (char) {
+	    return /^[A-ZÑÁÉÍÓÚ]$/.test(char);
 	};
 	
-	module.exports = TOKEN_NAMES;
+	var isDigit = function (char) {
+	    return /^[0-9]$/.test(char);
+	};
+	
+	var isValidKey = function (key) {
+	    return isUpperChar(key) || isDigit(key) || _.includes(SYMBOL_KEYS, key) || _.includes(SPECIAL_KEYS, key);
+	};
+	
+	module.exports = function (keyDef) {
+	    var parts = keyDef.split('_');
+	    var prefix = parts[0];
+	    var modifier = parts.slice(1, -1).join('_');
+	    var key = parts[parts.length - 1];
+	
+	    return prefix === 'K' && _.includes(MODIFIERS, modifier) && isValidKey(key);
+	};
 
 
 /***/ },
 /* 3 */
-/***/ function(module, exports, __webpack_require__) {
-
-	var errors = __webpack_require__(4);
-	var Scope = __webpack_require__(5);
-	
-	function throwUndefinedSymbolError() {
-	    errors.throwParserError(this, 'No definido');
-	}
-	
-	function throwMissingOperatorError() {
-	    errors.throwParserError(this, 'No se encontró el operador');
-	}
-	
-	var OriginalSymbol = function () {
-	    this.nud = throwUndefinedSymbolError;
-	    this.led = throwMissingOperatorError;
-	};
-	
-	var Parser = function (lexer) {
-	    this.scope = null;
-	    this.token = null;
-	    this.tokens = lexer;
-	    this.symbolTable = {};
-	};
-	
-	Parser.prototype.symbol = function (id, bindingPower) {
-	    var s = this.symbolTable[id];
-	    bindingPower = bindingPower || 0;
-	    if (s) {
-	        if (bindingPower > s.lbp) {
-	            s.lbp = bindingPower;
-	        }
-	    } else {
-	        s = new OriginalSymbol();
-	        s.id = s.value = id;
-	        s.lbp = bindingPower;
-	        this.symbolTable[id] = s;
-	    }
-	    return s;
-	};
-	
-	Parser.prototype.expression = function (rightBindingPower) {
-	    rightBindingPower = rightBindingPower || 0;
-	    var left;
-	    var t = this.token;
-	    this.advance();
-	    left = t.nud();
-	    while (rightBindingPower < this.token.lbp) {
-	        t = this.token;
-	        this.advance();
-	        left = t.led(left);
-	    }
-	    return left;
-	};
-	
-	Parser.prototype.error = function (token, message) {
-	    errors.throwParserError(token, message);
-	};
-	
-	Parser.prototype.newScope = function () {
-	    var s = this.scope;
-	    this.scope = new Scope(this);
-	    this.scope.parent = s;
-	    return this.scope;
-	};
-	
-	Parser.prototype.advance = function (id, asBleh) {
-	    var a;
-	    var o;
-	    var t;
-	    var v;
-	    var tokens = this.tokens;
-	    if (id && this.token.id !== id) {
-	        if (this.lastToken && this.lastToken.range && this.token.range) {
-	            this.token.range.start = this.lastToken.range.start;
-	        }
-	        errors.throwParserError(this.token, 'Se esperaba "' + id + '" pero se encontró "' + this.token.value + '"');
-	    }
-	    if (!tokens.hasNext()) {
-	        var lastRange = this.token.range;
-	        this.token = this.symbolTable['(end)'];
-	        this.token.range = lastRange;
-	        return this.token;
-	    }
-	    t = tokens.next();
-	    v = t.value;
-	    a = t.type;
-	    if (a === 'name') {
-	        o = this.scope.find(v);
-	        if (o.arity === 'routine') {
-	            // force late binding
-	            o = this.symbolTable['(name)'];
-	        }
-	    } else if (a === 'operator') {
-	        o = this.symbolTable[v];
-	        if (!o) {
-	            errors.throwParserError(t, 'Unknown operator.');
-	        }
-	    } else if (a === 'number') {
-	        o = this.symbolTable['(literal)'];
-	        a = 'literal';
-	        v = parseInt(v, 10);
-	    } else if (asBleh) {
-	        o = this.symbolTable['(bleh)'];
-	        v = tokens.current;
-	    } else {
-	        errors.throwParserError(t, 'Unexpected token.');
-	    }
-	
-	    var token = Object.create(o);
-	    token.range = t.range;
-	    token.value = v;
-	    token.arity = a;
-	    this.lastToken = this.token;
-	    this.token = token;
-	    return token;
-	};
-	
-	Parser.prototype.op = function (id, bp, OpDefinition) {
-	    var parser = this;
-	    var s = this.symbol(id, bp);
-	    s.led = function (left) {
-	        return new OpDefinition(this, left, parser.expression(bp));
-	    };
-	    return s;
-	};
-	
-	Parser.prototype.statement = function () {
-	    var n = this.token;
-	    var v;
-	    if (n.std) {
-	        this.advance();
-	        this.scope.reserve(n);
-	        return n.std();
-	    }
-	    v = this.expression(0);
-	    if (v.alias !== ':=' && v.id !== '(' && v.arity !== 'routine') {
-	        errors.throwParserError(v, 'Bad expression statement.');
-	    }
-	    return v;
-	};
-	
-	Parser.prototype.statements = function () {
-	    var statementsList = [];
-	    var symbol;
-	    for (; ;) {
-	        if (this.token.id === '}' || this.token.id === '(end)') {
-	            break;
-	        }
-	        var range = this._currentRange();
-	        symbol = this.statement();
-	        if (symbol && !symbol.separator) {
-	            this._applyRangeToSymbol(range, symbol);
-	            statementsList.push(symbol);
-	        }
-	    }
-	    if (statementsList.length === 0) {
-	        return null;
-	    }
-	    return statementsList;
-	};
-	
-	Parser.prototype._applyRangeToSymbol = function (range, symbol) {
-	    symbol.range = range;
-	    if (this.token.range && this.token.range.end) {
-	        range.end = this.token.range.end;
-	    }
-	};
-	
-	Parser.prototype.rootDeclaration = function () {
-	    var n = this.token;
-	    if (!n.root) {
-	        errors.throwParserError(n, 'Se esperaba una definición de programa, función o procedimiento.');
-	    }
-	    this.advance();
-	    this.scope.reserve(n);
-	    return n.root();
-	};
-	
-	Parser.prototype.stmt = function (symbol, f) {
-	    var x = this.symbol(symbol);
-	    x.std = f;
-	    return x;
-	};
-	
-	Parser.prototype.infix = function (id, bp, led) {
-	    var s = this.symbol(id, bp);
-	    var self = this;
-	    s.led = led || function (left) {
-	        this.left = left;
-	        this.right = self.expression(bp);
-	        this.arity = 'binary';
-	        return this;
-	    };
-	    return s;
-	};
-	
-	Parser.prototype.infixr = function (id, bp, led) {
-	    var s = this.symbol(id, bp);
-	    var self = this;
-	    s.led = led || function (left) {
-	        this.left = left;
-	        this.right = self.expression(bp - 1);
-	        this.arity = 'binary';
-	        return this;
-	    };
-	    return s;
-	};
-	
-	Parser.prototype.prefix = function (id, nud) {
-	    var s = this.symbol(id);
-	    var self = this;
-	    s.nud = nud || function () {
-	        self.scope.reserve(this);
-	        this.left = self.expression(70);
-	        this.arity = 'unary';
-	        return this;
-	    };
-	    return s;
-	};
-	
-	Parser.prototype.root = function (symbol, f) {
-	    var x = this.symbol(symbol);
-	    x.root = f;
-	    return x;
-	};
-	
-	Parser.prototype.block = function () {
-	    var t = this.token;
-	    this.advance('{');
-	    return t.std();
-	};
-	
-	Parser.prototype._currentRange = function () {
-	    return {start: this.token.range.start, end: this.token.range.end};
-	};
-	
-	Parser.prototype.roots = function () {
-	    var roots = [];
-	    var symbol;
-	    for (; ;) {
-	        if (this.token.id === '(end)') {
-	            break;
-	        }
-	        var range = this._currentRange();
-	        symbol = this.rootDeclaration();
-	        if (symbol) {
-	            this._applyRangeToSymbol(range, symbol);
-	            roots.push(symbol);
-	        }
-	    }
-	    if (roots.length === 0) {
-	        return null;
-	    }
-	    return roots;
-	};
-	
-	Parser.prototype._parseContextAwareNode = function (input, nodeParser) {
-	    this.tokens.input(input);
-	    this.newScope();
-	    this.advance();
-	    var s = nodeParser();
-	    this.advance('(end)');
-	    this.scope.pop();
-	    return s;
-	};
-	
-	Parser.prototype.parseExpression = function (input) {
-	    var self = this;
-	    return this._parseContextAwareNode(input, function () {
-	        return self.expression(0);
-	    });
-	};
-	
-	Parser.prototype.parseProgram = function (input) {
-	    var self = this;
-	    return this._parseContextAwareNode(input, function () {
-	        return self.roots();
-	    });
-	};
-	
-	Parser.prototype.parseStatements = function (input) {
-	    var self = this;
-	    return this._parseContextAwareNode(input, function () {
-	        return self.statements();
-	    });
-	};
-	
-	module.exports = Parser;
-
-
-/***/ },
-/* 4 */
-/***/ function(module, exports) {
-
-	var errors = {};
-	
-	errors.throwParserError = function (token, description) {
-	    var someError = {error: description, on: token};
-	    throw someError;
-	};
-	
-	errors.InterpreterException = function (message, on, reason) {
-	    this.message = message;
-	    this.on = on;
-	    this.reason = reason;
-	};
-	errors.InterpreterException.prototype = new Error();
-	
-	module.exports = errors;
-
-
-/***/ },
-/* 5 */
-/***/ function(module, exports, __webpack_require__) {
-
-	var errors = __webpack_require__(4);
-	
-	function itself() {
-	    return this;
-	}
-	
-	var Scope = function (parser) {
-	    this.parser = parser;
-	    this.def = {};
-	};
-	
-	Scope.prototype.define = function (identifier) {
-	    var t = this.def[identifier.value];
-	    if (typeof t === 'object') {
-	        errors.throwParserError(identifier, t.reserved ? 'Already reserved.' : 'Already defined.');
-	    }
-	    this.def[identifier.value] = identifier;
-	    identifier.reserved = false;
-	    identifier.nud = itself;
-	    identifier.led = null;
-	    identifier.std = null;
-	    identifier.lbp = 0;
-	    identifier.scope = this.parser.scope;
-	    return identifier;
-	};
-	
-	Scope.prototype.find = function (name) {
-	    var e = this;
-	    var targetToken;
-	    for (; ;) {
-	        targetToken = e.def[name];
-	        if (targetToken && typeof targetToken !== 'function') {
-	            return e.def[name];
-	        }
-	        e = e.parent;
-	        if (!e) {
-	            targetToken = this.parser.symbolTable[name];
-	            return targetToken && typeof targetToken !== 'function' ? targetToken : this.parser.symbolTable['(name)'];
-	        }
-	    }
-	};
-	
-	Scope.prototype.pop = function () {
-	    this.scope = this.parent;
-	};
-	
-	Scope.prototype.reserve = function (name) {
-	    if (name.arity !== 'name' || name.reserved) {
-	        return;
-	    }
-	    var t = this.def[name.value];
-	    if (t) {
-	        if (t.reserved) {
-	            return;
-	        }
-	        if (t.arity === 'name') {
-	            name.error('Already defined.');
-	        }
-	    }
-	    this.def[name.value] = name;
-	    name.reserved = true;
-	};
-	
-	module.exports = Scope;
-
-
-/***/ },
-/* 6 */
-/***/ function(module, exports) {
-
-	function Lexer(prefix, suffix) {
-	    // Current reading position
-	    this.from = 0;
-	    this.startColumn = 0;
-	    this.endColumn = 0;
-	    this.row = 0;
-	    this.prefix = prefix || '/=-<>:|&.';
-	    this.suffix = suffix || '=|&>.';
-	
-	    this.punctuators = '/+-*^.:|&;,()<>{}[]="';
-	
-	    // Look ahead position
-	    this.i = 0;
-	
-	    this.buf = null;
-	    this.buflen = 0;
-	}
-	
-	Lexer.prototype.hasNext = function () {
-	    this._skipNonTokens();
-	    return this.from < this.buflen;
-	};
-	
-	Lexer.prototype.input = function (buf) {
-	    this.from = 0;
-	    this.i = 0;
-	    this.startColumn = 0;
-	    this.endColumn = 0;
-	    this.row = 0;
-	    this.buf = buf;
-	    this.buflen = buf.length;
-	    this.current = null;
-	    this.nextChar = null;
-	};
-	
-	var TokenTypes = {
-	    IDENTIFIER: 'name',
-	    OPERATOR: 'operator',
-	    EOF: 'eof',
-	    COMMENT: 'comment',
-	    NUMBER: 'number',
-	    NEWLINE: 'newline'
-	};
-	
-	/**
-	 * This method is highly procedural for performance reasons.
-	 * There is no need for the lexer to be too flexible, since the
-	 * semantics will be associated to identifiers on the parser.
-	 *
-	 * @returns Token. The next token on the buffer, or null if the buffer is empty.
-	 */
-	Lexer.prototype.next = function () {
-	    do {
-	        this._skipNonTokens();
-	        this._refreshCurrentAndNextChars();
-	
-	        if (this.from >= this.buflen) {
-	            return null;
-	        }
-	    } while (this._processComment());
-	
-	    // Always add cases in descending order of occurrence probability
-	    if (this._processIdentifier()) {
-	        return this._consume(TokenTypes.IDENTIFIER);
-	    } else if (this._processOperator()) {
-	        return this._consume(TokenTypes.OPERATOR);
-	    } else if (this._processNumber()) {
-	        return this._consume(TokenTypes.NUMBER);
-	    }
-	    return this._processError();
-	};
-	
-	// PRIVATE
-	
-	function error(token, description) {
-	    return {error: description, on: token};
-	}
-	
-	Lexer.prototype._make = function (type, value) {
-	    return {
-	        type: type,
-	        value: value,
-	        range: {
-	            start: {row: this.row, column: this.startColumn},
-	            end: {row: this.row, column: this.endColumn}
-	        }
-	    };
-	};
-	
-	Lexer.prototype._consume = function (type) {
-	    var text = this.buf.substring(this.from, this.i);
-	    var newToken = this._make(type, text);
-	    this.from = this.i;
-	    this.startColumn = this.endColumn;
-	    return newToken;
-	};
-	
-	Lexer.prototype._refreshCurrentAndNextChars = function () {
-	    this.current = this.buf.charAt(this.from);
-	    this.nextChar = this.buf.charAt(this.from + 1);
-	};
-	
-	Lexer.prototype._processOperator = function () {
-	    if (this.punctuators.indexOf(this.current) >= 0) {
-	        this._increaseFrom();
-	        this._processMultiCharOperator();
-	        return true;
-	    }
-	    return false;
-	};
-	
-	Lexer.prototype._processMultiCharOperator = function () {
-	    if (this.prefix.indexOf(this.current) >= 0 && this.suffix.indexOf(this.nextChar) >= 0) {
-	        this._incrementStep();
-	    }
-	};
-	
-	Lexer.prototype._processNumber = function () {
-	    if (_isDigit(this.current)) {
-	        this._increaseFrom();
-	        while (this.i < this.buflen && _isDigit(this.buf.charAt(this.i))) {
-	            this._incrementStep();
-	        }
-	        return true;
-	    }
-	    return false;
-	};
-	
-	Lexer.prototype._processError = function () {
-	    this._increaseFrom();
-	    return error('Unmatched token', this._consume('UNMATCHED'));
-	};
-	
-	Lexer.prototype._resetColumnCount = function () {
-	    this.startColumn = this.endColumn;
-	};
-	
-	Lexer.prototype._increaseFrom = function () {
-	    this.i = this.from + 1;
-	    this.startColumn = this.startColumn + 1;
-	    this.endColumn = this.startColumn;
-	};
-	
-	Lexer.prototype._incrementStep = function () {
-	    this.i++;
-	    this.endColumn++;
-	};
-	
-	Lexer.prototype._processIdentifier = function () {
-	    if (_isAlpha(this.current)) {
-	        this._increaseFrom();
-	        while (this.i < this.buflen && _isAlphanum(this.buf.charAt(this.i))) {
-	            this._incrementStep();
-	        }
-	        return true;
-	    }
-	    return false;
-	};
-	
-	Lexer.prototype._skipNonTokens = function () {
-	    while (this.from < this.buflen) {
-	        var c = this.buf.charAt(this.from);
-	        if (c === ' ' || c === '\t' || c === '\r' || c === '\n') {
-	            if (_isNewline(c)) {
-	                this.row += 1;
-	                this.endColumn = 0;
-	                this.startColumn = 0;
-	            } else {
-	                this.startColumn++;
-	                this.endColumn = this.startColumn;
-	            }
-	            this.from++;
-	            this.i = this.from;
-	        } else {
-	            break;
-	        }
-	    }
-	};
-	
-	Lexer.prototype._processComment = function () {
-	    var chars = this.current + this.nextChar;
-	    return this._processSingleLineComment(chars) || this._processMultiLineComment(chars);
-	};
-	
-	Lexer.prototype._processSingleLineComment = function (chars) {
-	    if (chars === '//') {
-	        while (this.i < this.buflen && !_isNewline(this.buf.charAt(this.i))) {
-	            this._incrementStep();
-	        }
-	        this.from = this.i;
-	        this.row++;
-	        this.startColumn = 0;
-	        this.endColumn = 0;
-	        return true;
-	    }
-	};
-	
-	Lexer.prototype._processMultiLineComment = function (chars) {
-	    if (chars === '/*') {
-	        this._incrementStep();
-	        this._incrementStep();
-	        while (this.i < this.buflen && this.buf.charAt(this.i) !== '*' && this.buf.charAt(this.i + 1) !== '/') {
-	            this._incrementStep();
-	            if (_isNewline(this.buf.charAt(this.i))) {
-	                this.endColumn = 0;
-	            }
-	        }
-	        this._incrementStep();
-	        this._incrementStep();
-	        this.from = this.i;
-	        this.endColumn = this.startColumn;
-	        return true;
-	    }
-	    return false;
-	};
-	
-	function _isNewline(c) {
-	    return c === '\r' || c === '\n';
-	}
-	
-	function _isDigit(c) {
-	    return c >= '0' && c <= '9';
-	}
-	
-	function _isAlpha(c) {
-	    return _isLetter(c) || c === '_' || c === '\'';
-	}
-	
-	function _isAlphanum(c) {
-	    return _isLetter(c) || (c >= '0' && c <= '9') || c === '_' || c === '$';
-	}
-	
-	function _isLetter(c) {
-	    return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c === 'á' || c === 'é' || c === 'í' || c === 'ó' || c === 'ú' || c === 'ñ' || c === 'Á' || c === 'É' || c === 'Í' || c === 'Ó' || c === 'Ú' || c === 'Ñ';
-	}
-	
-	module.exports = Lexer;
-
-
-/***/ },
-/* 7 */
-/***/ function(module, exports, __webpack_require__) {
-
-	var node = {};
-	node.errors = __webpack_require__(4);
-	
-	var constants = {
-	    STM: 'statement',
-	    BINARY: 'binary',
-	    EXPRESSION: 'binary',
-	    NUMERIC_LITERAL: 'NumericLiteral'
-	};
-	
-	node.interpretBlock = function (block, context) {
-	    block = block || [];
-	    for (var i = 0; i < block.length; i++) {
-	        block[i].interpret(context);
-	    }
-	    return context;
-	};
-	
-	__webpack_require__(8)(node, constants);
-	__webpack_require__(9)(node, constants);
-	__webpack_require__(10)(node, constants);
-	__webpack_require__(11)(node, constants);
-	__webpack_require__(12)(node, constants);
-	__webpack_require__(13)(node, constants);
-	__webpack_require__(14)(node, constants);
-	__webpack_require__(15)(node, constants);
-	__webpack_require__(17)(node, constants);
-	__webpack_require__(18)(node, constants);
-	__webpack_require__(19)(node, constants);
-	__webpack_require__(20)(node, constants);
-	__webpack_require__(21)(node, constants);
-	
-	module.exports = node;
-
-
-/***/ },
-/* 8 */
-/***/ function(module, exports) {
-
-	module.exports = function (node, constants) {
-	    node.NumericLiteral = function (token, value) {
-	        this.token = token;
-	        this.value = value;
-	        this.alias = constants.NUMERIC_LITERAL;
-	    };
-	    node.NumericLiteral.prototype.type = 'number';
-	
-	    node.NumericLiteral.prototype.eval = function (context, options) {
-	        if (!options) {
-	            options = {attribute: 'value'};
-	        }
-	
-	        return options.attribute ? this[options.attribute] : this;
-	    };
-	};
-
-
-/***/ },
-/* 9 */
-/***/ function(module, exports) {
-
-	module.exports = function (node) {
-	    node.Constant = function (token, alias, value, type) {
-	        this.token = token;
-	        this.value = value;
-	        this.alias = alias;
-	        this.type = type;
-	    };
-	
-	    node.Constant.prototype.eval = function (context, options) {
-	        if (!options) {
-	            options = {attribute: 'value'};
-	        }
-	
-	        return options.attribute ? this[options.attribute] : this;
-	    };
-	}
-	;
-
-
-/***/ },
-/* 10 */
-/***/ function(module, exports) {
-
-	module.exports = function (node) {
-	    node.Variable = function (token, id) {
-	        this.token = token;
-	        this.value = id;
-	    };
-	
-	    node.Variable.prototype.eval = function (context, options) {
-	        if (!options) {
-	            options = {method: 'get'};
-	        }
-	
-	        var key = this.value;
-	        return options.method ? context[options.method](key) : context.getNode(key);
-	    };
-	
-	    return node;
-	};
-
-
-/***/ },
-/* 11 */
-/***/ function(module, exports) {
-
-	module.exports = function (node, constants) {
-	    node.Assignment = function (token, left, right) {
-	        this.token = token;
-	        this.arity = constants.STM;
-	        this.alias = ':=';
-	        this.left = left;
-	        this.right = right;
-	    };
-	
-	    node.Assignment.prototype.interpret = function (context) {
-	        context.put(this.left.token.value, this.right.eval(context, {}), node, this.left.token);
-	    };
-	};
-
-
-/***/ },
-/* 12 */
-/***/ function(module, exports) {
-
-	module.exports = function (node) {
-	    node.If = function (token, condition, trueBranch, falseBranch) {
-	        this.token = token;
-	        this.alias = 'if';
-	        this.condition = condition;
-	        this.trueBranch = trueBranch;
-	        this.falseBranch = falseBranch;
-	    };
-	
-	    node.If.prototype.interpret = function (context) {
-	        return node.interpretBlock(this.condition.eval(context) ? this.trueBranch : this.falseBranch, context);
-	    };
-	
-	    node.Switch = function (token, expression, cases) {
-	        this.token = token;
-	        this.alias = 'switch';
-	        this.expression = expression;
-	        this.cases = cases;
-	    };
-	
-	    node.Switch.prototype.interpret = function (context) {
-	        var value = this.expression.eval(context);
-	        for (var i = 0; i < this.cases.length; i++) {
-	            if (this.cases[i].case.eval(context) === value) {
-	                node.interpretBlock(this.cases[i].body, context);
-	                break;
-	            }
-	        }
-	        return context;
-	    };
-	}
-	;
-
-
-/***/ },
-/* 13 */
-/***/ function(module, exports) {
-
-	module.exports = function (node, constants) {
-	    var BinaryOperation = function (token, left, right, alias) {
-	        this.alias = alias;
-	        this.token = token;
-	        this.left = left;
-	        this.right = right;
-	        this.arity = constants.BINARY;
-	    };
-	
-	    function defineBinaryOperation(className) {
-	        node[className] = function (token, left, right) {
-	            BinaryOperation.call(this, token, left, right, className);
-	        };
-	        node[className].prototype = new BinaryOperation();
-	    }
-	
-	    defineBinaryOperation('SumOperation');
-	    node.SumOperation.prototype.eval = function (context) {
-	        return this.left.eval(context) + this.right.eval(context);
-	    };
-	
-	    defineBinaryOperation('DiffOperation');
-	    node.DiffOperation.prototype.eval = function (context) {
-	        return this.left.eval(context) - this.right.eval(context);
-	    };
-	
-	    defineBinaryOperation('MulOperation');
-	    node.MulOperation.prototype.eval = function (context) {
-	        return this.left.eval(context) * this.right.eval(context);
-	    };
-	
-	    defineBinaryOperation('DivOperation');
-	    node.DivOperation.prototype.eval = function (context) {
-	        return Math.floor(this.left.eval(context) / this.right.eval(context));
-	    };
-	
-	    defineBinaryOperation('ModOperation');
-	    node.ModOperation.prototype.eval = function (context) {
-	        return this.left.eval(context) % this.right.eval(context);
-	    };
-	
-	    defineBinaryOperation('ExpOperation');
-	    node.ExpOperation.prototype.eval = function (context) {
-	        return Math.pow(this.left.eval(context), this.right.eval(context));
-	    };
-	
-	    defineBinaryOperation('AndOperation');
-	    node.AndOperation.prototype.eval = function (context) {
-	        return this.left.eval(context) && this.right.eval(context);
-	    };
-	
-	    defineBinaryOperation('OrOperation');
-	    node.OrOperation.prototype.eval = function (context) {
-	        return this.left.eval(context) || this.right.eval(context);
-	    };
-	
-	    defineBinaryOperation('NotEqualOperation');
-	    node.NotEqualOperation.prototype.eval = function (context) {
-	        return this.left.eval(context) !== this.right.eval(context);
-	    };
-	
-	    defineBinaryOperation('EqOperation');
-	    node.EqOperation.prototype.eval = function (context) {
-	        return this.left.eval(context) === this.right.eval(context);
-	    };
-	
-	    defineBinaryOperation('LessOperation');
-	    node.LessOperation.prototype.eval = function (context) {
-	        return this.left.eval(context) < this.right.eval(context);
-	    };
-	
-	    defineBinaryOperation('GraterOperation');
-	    node.GraterOperation.prototype.eval = function (context) {
-	        return this.left.eval(context) > this.right.eval(context);
-	    };
-	
-	    defineBinaryOperation('LessEqualOperation');
-	    node.LessEqualOperation.prototype.eval = function (context) {
-	        return this.left.eval(context) <= this.right.eval(context);
-	    };
-	
-	    defineBinaryOperation('GreaterEqualOperation');
-	    node.GreaterEqualOperation.prototype.eval = function (context) {
-	        return this.left.eval(context) >= this.right.eval(context);
-	    };
-	}
-	;
-
-
-/***/ },
-/* 14 */
-/***/ function(module, exports) {
-
-	module.exports = function (node) {
-	    node.NotOperation = function (token, expression) {
-	        this.token = token;
-	        this.expression = expression;
-	        this.alias = 'not';
-	    };
-	
-	    node.NotOperation.prototype.eval = function (context) {
-	        return !this.expression.eval(context);
-	    };
-	
-	    node.SubstractionOperation = function (token, expression) {
-	        this.token = token;
-	        this.expression = expression;
-	        this.alias = '-';
-	    };
-	
-	    node.SubstractionOperation.prototype.eval = function (context) {
-	        return -this.expression.eval(context);
-	    };
-	}
-	;
-
-
-/***/ },
-/* 15 */
-/***/ function(module, exports, __webpack_require__) {
-
-	var getValue = __webpack_require__(16);
-	
-	module.exports = function (node, constants) {
-	    node.HasStones = function (token, parameters) {
-	        this.token = token;
-	        this.arity = constants.EXPRESSION;
-	        this.alias = 'hasStones';
-	        this.parameters = parameters;
-	    };
-	
-	    node.HasStones.prototype.eval = function (context) {
-	        var value = getValue(node, this.token, this.parameters, context, 'Color');
-	        return context.board().amountStones(value) > 0;
-	    };
-	
-	    node.CanMove = function (token, parameters) {
-	        this.token = token;
-	        this.arity = constants.EXPRESSION;
-	        this.alias = 'canMove';
-	        this.parameters = parameters;
-	    };
-	
-	    node.CanMove.prototype.eval = function (context) {
-	        var value = getValue(node, this.token, this.parameters, context, 'Dirección');
-	        return context.board().canMove(value);
-	    };
-	
-	    node.NumStones = function (token, parameters) {
-	        this.token = token;
-	        this.arity = constants.EXPRESSION;
-	        this.alias = 'numStones';
-	        this.parameters = parameters;
-	    };
-	
-	    node.NumStones.prototype.eval = function (context) {
-	        var value = getValue(node, this.token, this.parameters, context, 'Color');
-	        return context.board().amountStones(value);
-	    };
-	
-	    node.MinDir = function (token, parameters) {
-	        this.token = token;
-	        this.arity = constants.EXPRESSION;
-	        this.alias = 'minDir';
-	        this.parameters = parameters;
-	    };
-	
-	    node.MinDir.prototype.eval = function (context) {
-	        return context.nativeRepresentations().minDir;
-	    };
-	
-	    node.MaxDir = function (token, parameters) {
-	        this.token = token;
-	        this.arity = constants.EXPRESSION;
-	        this.alias = 'maxDir';
-	        this.parameters = parameters;
-	    };
-	
-	    node.MaxDir.prototype.eval = function (context) {
-	        return context.nativeRepresentations().maxDir;
-	    };
-	
-	    node.MaxColor = function (token, parameters) {
-	        this.token = token;
-	        this.arity = constants.EXPRESSION;
-	        this.alias = 'maxColor';
-	        this.parameters = parameters;
-	    };
-	
-	    node.MaxColor.prototype.eval = function (context) {
-	        return context.nativeRepresentations().maxColor;
-	    };
-	
-	    node.MinColor = function (token, parameters) {
-	        this.token = token;
-	        this.arity = constants.EXPRESSION;
-	        this.alias = 'minColor';
-	        this.parameters = parameters;
-	    };
-	
-	    node.MinColor.prototype.eval = function (context) {
-	        return context.nativeRepresentations().minColor;
-	    };
-	
-	    node.MinBool = function (token, parameters) {
-	        this.token = token;
-	        this.arity = constants.EXPRESSION;
-	        this.alias = 'minBool';
-	        this.parameters = parameters;
-	    };
-	
-	    node.MinBool.prototype.eval = function () {
-	        return false;
-	    };
-	
-	    node.MaxBool = function (token, parameters) {
-	        this.token = token;
-	        this.arity = constants.EXPRESSION;
-	        this.alias = 'maxBool';
-	        this.parameters = parameters;
-	    };
-	
-	    node.MaxBool.prototype.eval = function () {
-	        return true;
-	    };
-	};
-
-
-/***/ },
-/* 16 */
-/***/ function(module, exports) {
-
-	module.exports = function (node, token, parameters, context, expectedType, options) {
-	    var parameter = parameters[0];
-	
-	    var finalNode = parameter.eval(context, {});
-	    var value = (finalNode !== undefined && finalNode.value !== undefined) ? finalNode.value : finalNode;
-	
-	    if (finalNode !== undefined && finalNode.type !== undefined && expectedType !== undefined && finalNode.type !== expectedType) {
-	        throw new node.errors.InterpreterException('Se esperaba un valor de tipo "' + expectedType + '" pero se encontró uno de tipo "' + finalNode.type + '".', token, {code: 'type_mismatch', detail: {expected: expectedType, actual: finalNode.type}});
-	    }
-	
-	    if (value === undefined) {
-	        var name = parameter.token.value;
-	        var subject = (name[0] && name[0] === name[0].toUpperCase()) ?
-	            {name: 'El literal', code: 'undefined_literal'} :
-	            {name: 'El nombre', code: 'undefined_variable'};
-	
-	        throw new node.errors.InterpreterException(subject.name + ' "' + parameter.token.value + '" no existe.', parameter.token, {code: subject.code, detail: parameter.token.value});
-	    }
-	
-	    return parameter.eval(context, options);
-	};
-
-
-/***/ },
-/* 17 */
-/***/ function(module, exports, __webpack_require__) {
-
-	var getValue = __webpack_require__(16);
-	
-	module.exports = function (node, constants) {
-	    var snapshot = function (node, context) {
-	        return {token: node.token, names: context.getCurrentNames()};
-	    };
-	
-	    node.MoveClaw = function (token, parameters) {
-	        this.token = token;
-	        this.arity = constants.STM;
-	        this.alias = 'MoveClaw';
-	        this.parameters = parameters;
-	    };
-	
-	    node.MoveClaw.prototype.interpret = function (context) {
-	        var value = getValue(node, this.token, this.parameters, context, 'Dirección');
-	
-	        try {
-	            context.board().move(value, snapshot(this, context));
-	        } catch (err) {
-	            err.on = this.token;
-	            throw err;
-	        }
-	        return context;
-	    };
-	
-	    node.RemoveStone = function (token, parameters) {
-	        this.token = token;
-	        this.arity = constants.STM;
-	        this.alias = 'Grab';
-	        this.parameters = parameters;
-	    };
-	
-	    node.RemoveStone.prototype.interpret = function (context) {
-	        var value = getValue(node, this.token, this.parameters, context, 'Color');
-	
-	        try {
-	            context.board().removeStone(value, snapshot(this, context));
-	        } catch (err) {
-	            err.on = this.token;
-	            throw err;
-	        }
-	        return context;
-	    };
-	
-	    node.PutStone = function (token, parameters) {
-	        this.token = token;
-	        this.arity = constants.STM;
-	        this.alias = 'Drop';
-	        this.parameters = parameters;
-	    };
-	
-	    node.PutStone.prototype.interpret = function (context) {
-	        var value = getValue(node, this.token, this.parameters, context, 'Color');
-	        context.board().putStone(value, snapshot(this, context));
-	        return context;
-	    };
-	
-	    node.MoveToEdge = function (token, parameters) {
-	        this.token = token;
-	        this.arity = constants.STM;
-	        this.alias = 'MoveToEdge';
-	        this.parameters = parameters;
-	    };
-	
-	    node.MoveToEdge.prototype.interpret = function (context) {
-	        var value = getValue(node, this.token, this.parameters, context, 'Dirección');
-	        context.board().moveToEdge(value, snapshot(this, context));
-	        return context;
-	    };
-	
-	    node.CleanBoard = function (token, parameters) {
-	        this.token = token;
-	        this.arity = constants.STM;
-	        this.alias = 'CleanBoard';
-	        this.parameters = parameters;
-	    };
-	
-	    node.CleanBoard.prototype.interpret = function (context) {
-	        context.board().clear(snapshot(this, context));
-	        return context;
-	    };
-	
-	    node.Boom = function (token, parameters) {
-	        this.token = token;
-	        this.arity = constants.STM;
-	        this.alias = 'BOOM';
-	        this.parameters = parameters;
-	    };
-	
-	    node.Boom.prototype.interpret = function (context) {
-	        try {
-	            context.board().boom(this.parameters[0]);
-	        } catch (err) {
-	            err.on = this.token;
-	            throw err;
-	        }
-	        return context;
-	    };
-	};
-
-
-/***/ },
-/* 18 */
-/***/ function(module, exports, __webpack_require__) {
-
-	var getValue = __webpack_require__(16);
-	
-	module.exports = function (node) {
-	    function evalArguments(token, context, parameters, options) {
-	        var results = [];
-	        if (parameters) {
-	            for (var i = 0; i < parameters.length; i++) {
-	                var value = getValue(node, token, [parameters[i]], context, undefined, options);
-	                results.push(value);
-	            }
-	        }
-	        return results;
-	    }
-	
-	    function fillParameters(context, parameters, declaration, node, token) {
-	        // TODO: no se pueden reasignar valores a los parámetros
-	        if (declaration.parameters) {
-	            if (declaration.parameters.length !== parameters.length) {
-	                throw new node.errors.InterpreterException('Se esperaban ' + declaration.parameters.length + ' argumentos pero se obtuvieron ' + parameters.length + '.', token, {code: 'wrong_arity', detail: {expected: declaration.parameters.length, actual: parameters.length}});
-	            }
-	            for (var i = 0; i < declaration.parameters.length; i++) {
-	                context.put(declaration.parameters[i].value, parameters[i], node, token);
-	            }
-	        }
-	    }
-	
-	    // TODO: el mundo de las variables, índices y parámetros debe ser disjunto por body!!
-	
-	    node.ProcedureCall = function (token, declarationProvider, parameters) {
-	        this.token = token;
-	        this.arity = 'routine';
-	        this.alias = 'ProcedureCall';
-	        this.name = token.value;
-	        this.parameters = parameters;
-	        this.declarationProvider = declarationProvider;
-	    };
-	
-	    node.ProcedureCall.prototype.interpret = function (context) {
-	        var target = this.declarationProvider();
-	        if (!target.declaration) {
-	            throw new node.errors.InterpreterException('El procedimiento ' + this.name + ' no se encuentra definido.', this, {code: 'undefined_procedure', detail: this.name});
-	        }
-	        var declaration = target.declaration;
-	        var parameterValues = evalArguments(this.token, context, this.parameters, {});
-	        context.startContext(this.name);
-	        fillParameters(context, parameterValues, declaration, node, this.token);
-	        node.interpretBlock(declaration.body, context);
-	        context.stopContext();
-	        return context;
-	    };
-	
-	    node.FunctionCall = function (token, declarationProvider, parameters) {
-	        this.token = token;
-	        this.arity = 'routine';
-	        this.alias = 'FunctionCall';
-	        this.name = token.value;
-	        this.parameters = parameters;
-	        this.declarationProvider = declarationProvider;
-	    };
-	
-	    node.FunctionCall.prototype.eval = function (context, options) {
-	        var target = this.declarationProvider();
-	        if (!target.declaration) {
-	            throw new node.errors.InterpreterException('La función "' + this.name + '" no se encuentra definida.', this.token, {code: 'undefined_function', detail: this.name});
-	        }
-	        var declaration = target.declaration;
-	        var parameterValues = evalArguments(this.token, context, this.parameters, {});
-	        context.startContext(this.name);
-	        context.pushBoard();
-	        fillParameters(context, parameterValues, declaration, node, this.token);
-	        node.interpretBlock(declaration.body, context);
-	        var result = declaration.return.expression.eval(context, options);
-	        context.popBoard();
-	        context.stopContext();
-	        return result;
-	    };
-	}
-	;
-
-
-/***/ },
-/* 19 */
-/***/ function(module, exports) {
-
-	module.exports = function (node) {
-	    node.ProcedureDeclaration = function (token, parameters, body) {
-	        this.token = token;
-	        this.name = token.value;
-	        this.arity = 'routine';
-	        this.alias = 'procedureDeclaration';
-	        this.parameters = parameters || [];
-	        this.body = body || [];
-	    };
-	
-	    node.FunctionDeclaration = function (token, parameters, body, returnExpression) {
-	        this.token = token;
-	        this.name = token.value;
-	        this.arity = 'routine';
-	        this.alias = 'functionDeclaration';
-	        this.parameters = parameters || [];
-	        this.body = body || [];
-	        this.return = returnExpression;
-	    };
-	
-	    node.ReturnStatement = function (token, expression) {
-	        this.token = token;
-	        this.alias = 'return';
-	        this.expression = expression;
-	    };
-	
-	    node.ReturnStatement.prototype.interpret = function (context) {
-	        node.errors.throwParserError(this.token, 'Solo puede usarse return como última sentencia de una función o programa.');
-	        return context;
-	    };
-	};
-
-
-/***/ },
-/* 20 */
-/***/ function(module, exports) {
-
-	module.exports = function (node) {
-	    node.While = function (token, expression, body) {
-	        this.alias = 'while';
-	        this.token = token;
-	        this.expression = expression;
-	        this.body = body;
-	    };
-	
-	    node.While.prototype.interpret = function (context) {
-	        while (this.expression.eval(context)) {
-	            node.interpretBlock(this.body, context);
-	        }
-	        return context;
-	    };
-	
-	    node.Repeat = function (token, expression, body) {
-	        this.alias = 'repeat';
-	        this.token = token;
-	        this.expression = expression;
-	        this.body = body;
-	    };
-	
-	    node.Repeat.prototype.interpret = function (context) {
-	        var value = this.expression.eval(context);
-	        for (var i = 0; i < value; i++) {
-	            node.interpretBlock(this.body, context);
-	        }
-	        return context;
-	    };
-	
-	    node.ForEach = function (token, iterator, items, body) {
-	        this.alias = 'foreach';
-	        this.token = token;
-	        this.iterator = iterator;
-	        this.items = items;
-	        this.body = body;
-	    };
-	
-	    node.ForEach.prototype.interpret = function (context) {
-	        for (var i = 0; i < this.items.length; i++) {
-	            context.put(this.iterator.token.value, this.items[i].eval(context, {}), node, this.token);
-	            node.interpretBlock(this.body, context);
-	        }
-	
-	        return context;
-	    };
-	};
-
-
-/***/ },
-/* 21 */
-/***/ function(module, exports, __webpack_require__) {
-
-	var _ = __webpack_require__(22);
-	
-	module.exports = function (node) {
-	    node.Program = function (token, body) {
-	        this.token = token;
-	        this.alias = 'program';
-	        this.body = body || [];
-	
-	        var lastSentence = _.last(this.body);
-	        if (lastSentence && lastSentence.alias === 'return') {
-	            this.returnSentence = this.body.pop();
-	        }
-	    };
-	
-	    node.Program.prototype.interpret = function (context) {
-	        try {
-	            node.interpretBlock(this.body, context);
-	            this._setExitStatus(context);
-	        } catch (err) {
-	            err.context = context;
-	            throw err;
-	        }
-	        return context;
-	    };
-	
-	    node.Program.prototype._setExitStatus = function (context) {
-	        if (this.returnSentence) {
-	            context.exitStatus = this.returnSentence.expression.eval(context);
-	            if (!_.isNumber(context.exitStatus)) {
-	                throw new node.errors.InterpreterException('El programa retornó un valor no numérico.', this.returnSentence.token, {code: 'non_numeric_exit_code', detail: context.exitStatus});
-	            }
-	        }
-	    };
-	
-	    node.Root = function (program, declarations) {
-	        this.alias = 'root';
-	        this.program = program;
-	        this.declarations = declarations;
-	    };
-	
-	    node.Root.prototype.interpret = function (context) {
-	        this.program.interpret(context);
-	        return context;
-	    };
-	};
-
-
-/***/ },
-/* 22 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_RESULT__;/* WEBPACK VAR INJECTION */(function(global, module) {/**
@@ -18987,10 +17604,10 @@ return /******/ (function(modules) { // webpackBootstrap
 	  }
 	}.call(this));
 	
-	/* WEBPACK VAR INJECTION */}.call(exports, (function() { return this; }()), __webpack_require__(23)(module)))
+	/* WEBPACK VAR INJECTION */}.call(exports, (function() { return this; }()), __webpack_require__(4)(module)))
 
 /***/ },
-/* 23 */
+/* 4 */
 /***/ function(module, exports) {
 
 	module.exports = function(module) {
@@ -19006,11 +17623,1495 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 24 */
+/* 5 */
+/***/ function(module, exports) {
+
+	var TOKEN_NAMES = {
+	    PROGRAM: 'program',
+	    INTERACTIVE: 'interactive',
+	    PROCEDURE: 'procedure',
+	    FUNCTION: 'function',
+	    RETURN: 'return',
+	    DROP: 'Poner',
+	    MOVE: 'Mover',
+	    GRAB: 'Sacar',
+	    BOOM: 'BOOM',
+	    MOVE_TO_EDGE: 'IrAlBorde',
+	    CLEAN_BOARD: 'VaciarTablero',
+	    REPEAT: 'repeat',
+	    WHILE: 'while',
+	    FOR_EACH: 'foreach',
+	    IN: 'in',
+	    IF: 'if',
+	    THEN: 'then',
+	    ELSE: 'else',
+	    SWITCH: 'switch',
+	    TO: 'to',
+	    OPPOSITE: 'opuesto',
+	    NEXT: 'siguiente',
+	    PREVIOUS: 'previo',
+	    DIV: 'div',
+	    MOD: 'mod',
+	    NOT: 'not',
+	    HAS_STONES: 'hayBolitas',
+	    CAN_MOVE: 'puedeMover',
+	    NUM_STONES: 'nroBolitas',
+	    MIN_DIR: 'minDir',
+	    MAX_DIR: 'maxDir',
+	    MIN_COLOR: 'minColor',
+	    MAX_COLOR: 'maxColor',
+	    MIN_BOOL: 'minBool',
+	    MAX_BOOL: 'maxBool',
+	    RED: 'Rojo',
+	    BLUE: 'Azul',
+	    BLACK: 'Negro',
+	    GREEN: 'Verde',
+	    TRUE: 'True',
+	    FALSE: 'False',
+	    NORTH: 'Norte',
+	    SOUTH: 'Sur',
+	    EAST: 'Este',
+	    WEST: 'Oeste',
+	    BOOLEAN: 'Booleano',
+	    COLOR: 'Color',
+	    DIRECTION: 'Dirección',
+	    NUMBER: 'Número'
+	};
+	
+	module.exports = TOKEN_NAMES;
+
+
+/***/ },
+/* 6 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var _ = __webpack_require__(22);
-	var Board = __webpack_require__(25);
+	var errors = __webpack_require__(7);
+	var Scope = __webpack_require__(8);
+	
+	function throwUndefinedSymbolError() {
+	    errors.throwParserError(this, 'No definido');
+	}
+	
+	function throwMissingOperatorError() {
+	    errors.throwParserError(this, 'No se encontró el operador');
+	}
+	
+	var OriginalSymbol = function () {
+	    this.nud = throwUndefinedSymbolError;
+	    this.led = throwMissingOperatorError;
+	};
+	
+	var Parser = function (lexer) {
+	    this.scope = null;
+	    this.token = null;
+	    this.tokens = lexer;
+	    this.symbolTable = {};
+	};
+	
+	Parser.prototype.symbol = function (id, bindingPower) {
+	    var s = this.symbolTable[id];
+	    bindingPower = bindingPower || 0;
+	    if (s) {
+	        if (bindingPower > s.lbp) {
+	            s.lbp = bindingPower;
+	        }
+	    } else {
+	        s = new OriginalSymbol();
+	        s.id = s.value = id;
+	        s.lbp = bindingPower;
+	        this.symbolTable[id] = s;
+	    }
+	    return s;
+	};
+	
+	Parser.prototype.expression = function (rightBindingPower) {
+	    rightBindingPower = rightBindingPower || 0;
+	    var left;
+	    var t = this.token;
+	    this.advance();
+	    left = t.nud();
+	    while (rightBindingPower < this.token.lbp) {
+	        t = this.token;
+	        this.advance();
+	        left = t.led(left);
+	    }
+	    return left;
+	};
+	
+	Parser.prototype.error = function (token, message) {
+	    errors.throwParserError(token, message);
+	};
+	
+	Parser.prototype.newScope = function () {
+	    var s = this.scope;
+	    this.scope = new Scope(this);
+	    this.scope.parent = s;
+	    return this.scope;
+	};
+	
+	Parser.prototype.advance = function (id, asBleh) {
+	    var a;
+	    var o;
+	    var t;
+	    var v;
+	    var tokens = this.tokens;
+	    if (id && this.token.id !== id) {
+	        if (this.lastToken && this.lastToken.range && this.token.range) {
+	            this.token.range.start = this.lastToken.range.start;
+	        }
+	        errors.throwParserError(this.token, 'Se esperaba "' + id + '" pero se encontró "' + this.token.value + '"');
+	    }
+	    if (!tokens.hasNext()) {
+	        var lastRange = this.token.range;
+	        this.token = this.symbolTable['(end)'];
+	        this.token.range = lastRange;
+	        return this.token;
+	    }
+	    t = tokens.next();
+	    v = t.value;
+	    a = t.type;
+	    if (a === 'name') {
+	        o = this.scope.find(v);
+	        if (o.arity === 'routine') {
+	            // force late binding
+	            o = this.symbolTable['(name)'];
+	        }
+	    } else if (a === 'operator') {
+	        o = this.symbolTable[v];
+	        if (!o) {
+	            errors.throwParserError(t, 'Unknown operator.');
+	        }
+	    } else if (a === 'number') {
+	        o = this.symbolTable['(literal)'];
+	        a = 'literal';
+	        v = parseInt(v, 10);
+	    } else if (asBleh) {
+	        o = this.symbolTable['(bleh)'];
+	        v = tokens.current;
+	    } else {
+	        errors.throwParserError(t, 'Unexpected token.');
+	    }
+	
+	    var token = Object.create(o);
+	    token.range = t.range;
+	    token.value = v;
+	    token.arity = a;
+	    this.lastToken = this.token;
+	    this.token = token;
+	    return token;
+	};
+	
+	Parser.prototype.op = function (id, bp, OpDefinition) {
+	    var parser = this;
+	    var s = this.symbol(id, bp);
+	    s.led = function (left) {
+	        return new OpDefinition(this, left, parser.expression(bp));
+	    };
+	    return s;
+	};
+	
+	Parser.prototype.statement = function () {
+	    var n = this.token;
+	    var v;
+	    if (n.std) {
+	        this.advance();
+	        this.scope.reserve(n);
+	        return n.std();
+	    }
+	    v = this.expression(0);
+	    if (v.alias !== ':=' && v.id !== '(' && v.arity !== 'routine') {
+	        errors.throwParserError(v, 'Bad expression statement.');
+	    }
+	    return v;
+	};
+	
+	Parser.prototype.statements = function () {
+	    var statementsList = [];
+	    var symbol;
+	    for (; ;) {
+	        if (this.token.id === '}' || this.token.id === '(end)') {
+	            break;
+	        }
+	        var range = this._currentRange();
+	        symbol = this.statement();
+	        if (symbol && !symbol.separator) {
+	            this._applyRangeToSymbol(range, symbol);
+	            statementsList.push(symbol);
+	        }
+	    }
+	    if (statementsList.length === 0) {
+	        return null;
+	    }
+	    return statementsList;
+	};
+	
+	Parser.prototype._applyRangeToSymbol = function (range, symbol) {
+	    symbol.range = range;
+	    if (this.token.range && this.token.range.end) {
+	        range.end = this.token.range.end;
+	    }
+	};
+	
+	Parser.prototype.rootDeclaration = function () {
+	    var n = this.token;
+	    if (!n.root) {
+	        errors.throwParserError(n, 'Se esperaba una definición de programa, función o procedimiento.');
+	    }
+	    this.advance();
+	    this.scope.reserve(n);
+	    return n.root();
+	};
+	
+	Parser.prototype.stmt = function (symbol, f) {
+	    var x = this.symbol(symbol);
+	    x.std = f;
+	    return x;
+	};
+	
+	Parser.prototype.infix = function (id, bp, led) {
+	    var s = this.symbol(id, bp);
+	    var self = this;
+	    s.led = led || function (left) {
+	        this.left = left;
+	        this.right = self.expression(bp);
+	        this.arity = 'binary';
+	        return this;
+	    };
+	    return s;
+	};
+	
+	Parser.prototype.infixr = function (id, bp, led) {
+	    var s = this.symbol(id, bp);
+	    var self = this;
+	    s.led = led || function (left) {
+	        this.left = left;
+	        this.right = self.expression(bp - 1);
+	        this.arity = 'binary';
+	        return this;
+	    };
+	    return s;
+	};
+	
+	Parser.prototype.prefix = function (id, nud) {
+	    var s = this.symbol(id);
+	    var self = this;
+	    s.nud = nud || function () {
+	        self.scope.reserve(this);
+	        this.left = self.expression(70);
+	        this.arity = 'unary';
+	        return this;
+	    };
+	    return s;
+	};
+	
+	Parser.prototype.root = function (symbol, f) {
+	    var x = this.symbol(symbol);
+	    x.root = f;
+	    return x;
+	};
+	
+	Parser.prototype.block = function () {
+	    var t = this.token;
+	    this.advance('{');
+	    return t.std();
+	};
+	
+	Parser.prototype._currentRange = function () {
+	    return {start: this.token.range.start, end: this.token.range.end};
+	};
+	
+	Parser.prototype.roots = function () {
+	    var roots = [];
+	    var symbol;
+	    for (; ;) {
+	        if (this.token.id === '(end)') {
+	            break;
+	        }
+	        var range = this._currentRange();
+	        symbol = this.rootDeclaration();
+	        if (symbol) {
+	            this._applyRangeToSymbol(range, symbol);
+	            roots.push(symbol);
+	        }
+	    }
+	    if (roots.length === 0) {
+	        return null;
+	    }
+	    return roots;
+	};
+	
+	Parser.prototype._parseContextAwareNode = function (input, nodeParser) {
+	    this.tokens.input(input);
+	    this.newScope();
+	    this.advance();
+	    var s = nodeParser();
+	    this.advance('(end)');
+	    this.scope.pop();
+	    return s;
+	};
+	
+	Parser.prototype.parseExpression = function (input) {
+	    var self = this;
+	    return this._parseContextAwareNode(input, function () {
+	        return self.expression(0);
+	    });
+	};
+	
+	Parser.prototype.parseProgram = function (input) {
+	    var self = this;
+	    return this._parseContextAwareNode(input, function () {
+	        return self.roots();
+	    });
+	};
+	
+	Parser.prototype.parseStatements = function (input) {
+	    var self = this;
+	    return this._parseContextAwareNode(input, function () {
+	        return self.statements();
+	    });
+	};
+	
+	module.exports = Parser;
+
+
+/***/ },
+/* 7 */
+/***/ function(module, exports) {
+
+	var errors = {};
+	
+	errors.throwParserError = function (token, description) {
+	    var someError = {error: description, on: token};
+	    throw someError;
+	};
+	
+	errors.InterpreterException = function (message, on, reason) {
+	    this.message = message;
+	    this.on = on;
+	    this.reason = reason;
+	};
+	errors.InterpreterException.prototype = new Error();
+	
+	module.exports = errors;
+
+
+/***/ },
+/* 8 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var errors = __webpack_require__(7);
+	
+	function itself() {
+	    return this;
+	}
+	
+	var Scope = function (parser) {
+	    this.parser = parser;
+	    this.def = {};
+	};
+	
+	Scope.prototype.define = function (identifier) {
+	    var t = this.def[identifier.value];
+	    if (typeof t === 'object') {
+	        errors.throwParserError(identifier, t.reserved ? 'Already reserved.' : 'Already defined.');
+	    }
+	    this.def[identifier.value] = identifier;
+	    identifier.reserved = false;
+	    identifier.nud = itself;
+	    identifier.led = null;
+	    identifier.std = null;
+	    identifier.lbp = 0;
+	    identifier.scope = this.parser.scope;
+	    return identifier;
+	};
+	
+	Scope.prototype.find = function (name) {
+	    var e = this;
+	    var targetToken;
+	    for (; ;) {
+	        targetToken = e.def[name];
+	        if (targetToken && typeof targetToken !== 'function') {
+	            return e.def[name];
+	        }
+	        e = e.parent;
+	        if (!e) {
+	            targetToken = this.parser.symbolTable[name];
+	            return targetToken && typeof targetToken !== 'function' ? targetToken : this.parser.symbolTable['(name)'];
+	        }
+	    }
+	};
+	
+	Scope.prototype.pop = function () {
+	    this.scope = this.parent;
+	};
+	
+	Scope.prototype.reserve = function (name) {
+	    if (name.arity !== 'name' || name.reserved) {
+	        return;
+	    }
+	    var t = this.def[name.value];
+	    if (t) {
+	        if (t.reserved) {
+	            return;
+	        }
+	        if (t.arity === 'name') {
+	            name.error('Already defined.');
+	        }
+	    }
+	    this.def[name.value] = name;
+	    name.reserved = true;
+	};
+	
+	module.exports = Scope;
+
+
+/***/ },
+/* 9 */
+/***/ function(module, exports) {
+
+	function Lexer(prefix, suffix) {
+	    // Current reading position
+	    this.from = 0;
+	    this.startColumn = 0;
+	    this.endColumn = 0;
+	    this.row = 0;
+	    this.prefix = prefix || '/=-<>:|&.';
+	    this.suffix = suffix || '=|&>.';
+	
+	    this.punctuators = '/+-*^.:|&;,()<>{}[]="';
+	
+	    // Look ahead position
+	    this.i = 0;
+	
+	    this.buf = null;
+	    this.buflen = 0;
+	}
+	
+	Lexer.prototype.hasNext = function () {
+	    this._skipNonTokens();
+	    return this.from < this.buflen;
+	};
+	
+	Lexer.prototype.input = function (buf) {
+	    this.from = 0;
+	    this.i = 0;
+	    this.startColumn = 0;
+	    this.endColumn = 0;
+	    this.row = 0;
+	    this.buf = buf;
+	    this.buflen = buf.length;
+	    this.current = null;
+	    this.nextChar = null;
+	};
+	
+	var TokenTypes = {
+	    IDENTIFIER: 'name',
+	    OPERATOR: 'operator',
+	    EOF: 'eof',
+	    COMMENT: 'comment',
+	    NUMBER: 'number',
+	    NEWLINE: 'newline'
+	};
+	
+	/**
+	 * This method is highly procedural for performance reasons.
+	 * There is no need for the lexer to be too flexible, since the
+	 * semantics will be associated to identifiers on the parser.
+	 *
+	 * @returns Token. The next token on the buffer, or null if the buffer is empty.
+	 */
+	Lexer.prototype.next = function () {
+	    do {
+	        this._skipNonTokens();
+	        this._refreshCurrentAndNextChars();
+	
+	        if (this.from >= this.buflen) {
+	            return null;
+	        }
+	    } while (this._processComment());
+	
+	    // Always add cases in descending order of occurrence probability
+	    if (this._processIdentifier()) {
+	        return this._consume(TokenTypes.IDENTIFIER);
+	    } else if (this._processOperator()) {
+	        return this._consume(TokenTypes.OPERATOR);
+	    } else if (this._processNumber()) {
+	        return this._consume(TokenTypes.NUMBER);
+	    }
+	    return this._processError();
+	};
+	
+	// PRIVATE
+	
+	function error(token, description) {
+	    return {error: description, on: token};
+	}
+	
+	Lexer.prototype._make = function (type, value) {
+	    return {
+	        type: type,
+	        value: value,
+	        range: {
+	            start: {row: this.row, column: this.startColumn},
+	            end: {row: this.row, column: this.endColumn}
+	        }
+	    };
+	};
+	
+	Lexer.prototype._consume = function (type) {
+	    var text = this.buf.substring(this.from, this.i);
+	    var newToken = this._make(type, text);
+	    this.from = this.i;
+	    this.startColumn = this.endColumn;
+	    return newToken;
+	};
+	
+	Lexer.prototype._refreshCurrentAndNextChars = function () {
+	    this.current = this.buf.charAt(this.from);
+	    this.nextChar = this.buf.charAt(this.from + 1);
+	};
+	
+	Lexer.prototype._processOperator = function () {
+	    if (this.punctuators.indexOf(this.current) >= 0) {
+	        this._increaseFrom();
+	        this._processMultiCharOperator();
+	        return true;
+	    }
+	    return false;
+	};
+	
+	Lexer.prototype._processMultiCharOperator = function () {
+	    if (this.prefix.indexOf(this.current) >= 0 && this.suffix.indexOf(this.nextChar) >= 0) {
+	        this._incrementStep();
+	    }
+	};
+	
+	Lexer.prototype._processNumber = function () {
+	    if (_isDigit(this.current)) {
+	        this._increaseFrom();
+	        while (this.i < this.buflen && _isDigit(this.buf.charAt(this.i))) {
+	            this._incrementStep();
+	        }
+	        return true;
+	    }
+	    return false;
+	};
+	
+	Lexer.prototype._processError = function () {
+	    this._increaseFrom();
+	    return error('Unmatched token', this._consume('UNMATCHED'));
+	};
+	
+	Lexer.prototype._resetColumnCount = function () {
+	    this.startColumn = this.endColumn;
+	};
+	
+	Lexer.prototype._increaseFrom = function () {
+	    this.i = this.from + 1;
+	    this.startColumn = this.startColumn + 1;
+	    this.endColumn = this.startColumn;
+	};
+	
+	Lexer.prototype._incrementStep = function () {
+	    this.i++;
+	    this.endColumn++;
+	};
+	
+	Lexer.prototype._processIdentifier = function () {
+	    if (_isAlpha(this.current)) {
+	        this._increaseFrom();
+	        while (this.i < this.buflen && _isAlphanum(this.buf.charAt(this.i))) {
+	            this._incrementStep();
+	        }
+	        return true;
+	    }
+	    return false;
+	};
+	
+	Lexer.prototype._skipNonTokens = function () {
+	    while (this.from < this.buflen) {
+	        var c = this.buf.charAt(this.from);
+	        if (c === ' ' || c === '\t' || c === '\r' || c === '\n') {
+	            if (_isNewline(c)) {
+	                this.row += 1;
+	                this.endColumn = 0;
+	                this.startColumn = 0;
+	            } else {
+	                this.startColumn++;
+	                this.endColumn = this.startColumn;
+	            }
+	            this.from++;
+	            this.i = this.from;
+	        } else {
+	            break;
+	        }
+	    }
+	};
+	
+	Lexer.prototype._processComment = function () {
+	    var chars = this.current + this.nextChar;
+	    return this._processSingleLineComment(chars) || this._processMultiLineComment(chars);
+	};
+	
+	Lexer.prototype._processSingleLineComment = function (chars) {
+	    if (chars === '//') {
+	        while (this.i < this.buflen && !_isNewline(this.buf.charAt(this.i))) {
+	            this._incrementStep();
+	        }
+	        this.from = this.i;
+	        this.row++;
+	        this.startColumn = 0;
+	        this.endColumn = 0;
+	        return true;
+	    }
+	};
+	
+	Lexer.prototype._processMultiLineComment = function (chars) {
+	    if (chars === '/*') {
+	        this._incrementStep();
+	        this._incrementStep();
+	        while (this.i < this.buflen && this.buf.charAt(this.i) !== '*' && this.buf.charAt(this.i + 1) !== '/') {
+	            this._incrementStep();
+	            if (_isNewline(this.buf.charAt(this.i))) {
+	                this.endColumn = 0;
+	            }
+	        }
+	        this._incrementStep();
+	        this._incrementStep();
+	        this.from = this.i;
+	        this.endColumn = this.startColumn;
+	        return true;
+	    }
+	    return false;
+	};
+	
+	function _isNewline(c) {
+	    return c === '\r' || c === '\n';
+	}
+	
+	function _isDigit(c) {
+	    return c >= '0' && c <= '9';
+	}
+	
+	function _isAlpha(c) {
+	    return _isLetter(c) || c === '_' || c === '\'';
+	}
+	
+	function _isAlphanum(c) {
+	    return _isLetter(c) || (c >= '0' && c <= '9') || c === '_' || c === '$';
+	}
+	
+	function _isLetter(c) {
+	    return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c === 'á' || c === 'é' || c === 'í' || c === 'ó' || c === 'ú' || c === 'ñ' || c === 'Á' || c === 'É' || c === 'Í' || c === 'Ó' || c === 'Ú' || c === 'Ñ';
+	}
+	
+	module.exports = Lexer;
+
+
+/***/ },
+/* 10 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var node = {};
+	node.errors = __webpack_require__(7);
+	
+	var constants = {
+	    STM: 'statement',
+	    BINARY: 'binary',
+	    EXPRESSION: 'binary',
+	    NUMERIC_LITERAL: 'NumericLiteral'
+	};
+	
+	node.interpretBlock = function (block, context) {
+	    block = block || [];
+	    for (var i = 0; i < block.length; i++) {
+	        block[i].interpret(context);
+	    }
+	    return context;
+	};
+	
+	__webpack_require__(11)(node, constants);
+	__webpack_require__(12)(node, constants);
+	__webpack_require__(13)(node, constants);
+	__webpack_require__(14)(node, constants);
+	__webpack_require__(15)(node, constants);
+	__webpack_require__(16)(node, constants);
+	__webpack_require__(17)(node, constants);
+	__webpack_require__(18)(node, constants);
+	__webpack_require__(20)(node, constants);
+	__webpack_require__(21)(node, constants);
+	__webpack_require__(22)(node, constants);
+	__webpack_require__(23)(node, constants);
+	__webpack_require__(24)(node, constants);
+	__webpack_require__(25)(node, constants);
+	__webpack_require__(26)(node, constants);
+	
+	module.exports = node;
+
+
+/***/ },
+/* 11 */
+/***/ function(module, exports) {
+
+	module.exports = function (node, constants) {
+	    node.NumericLiteral = function (token, value) {
+	        this.token = token;
+	        this.value = value;
+	        this.alias = constants.NUMERIC_LITERAL;
+	    };
+	    node.NumericLiteral.prototype.type = 'number';
+	
+	    node.NumericLiteral.prototype.eval = function (context, options) {
+	        if (!options) {
+	            options = {attribute: 'value'};
+	        }
+	
+	        return options.attribute ? this[options.attribute] : this;
+	    };
+	};
+
+
+/***/ },
+/* 12 */
+/***/ function(module, exports) {
+
+	module.exports = function (node) {
+	    node.Constant = function (token, alias, value, type) {
+	        this.token = token;
+	        this.value = value;
+	        this.alias = alias;
+	        this.type = type;
+	    };
+	
+	    node.Constant.prototype.eval = function (context, options) {
+	        if (!options) {
+	            options = {attribute: 'value'};
+	        }
+	
+	        return options.attribute ? this[options.attribute] : this;
+	    };
+	}
+	;
+
+
+/***/ },
+/* 13 */
+/***/ function(module, exports) {
+
+	module.exports = function (node) {
+	    node.Variable = function (token, id) {
+	        this.token = token;
+	        this.value = id;
+	    };
+	
+	    node.Variable.prototype.eval = function (context, options) {
+	        if (!options) {
+	            options = {method: 'get'};
+	        }
+	
+	        var key = this.value;
+	        return options.method ? context[options.method](key) : context.getNode(key);
+	    };
+	
+	    return node;
+	};
+
+
+/***/ },
+/* 14 */
+/***/ function(module, exports) {
+
+	module.exports = function (node, constants) {
+	    node.Assignment = function (token, left, right) {
+	        this.token = token;
+	        this.arity = constants.STM;
+	        this.alias = ':=';
+	        this.left = left;
+	        this.right = right;
+	    };
+	
+	    node.Assignment.prototype.interpret = function (context) {
+	        context.put(this.left.token.value, this.right.eval(context, {}), node, this.left.token);
+	    };
+	};
+
+
+/***/ },
+/* 15 */
+/***/ function(module, exports) {
+
+	module.exports = function (node) {
+	    node.If = function (token, condition, trueBranch, falseBranch) {
+	        this.token = token;
+	        this.alias = 'if';
+	        this.condition = condition;
+	        this.trueBranch = trueBranch;
+	        this.falseBranch = falseBranch;
+	    };
+	
+	    node.If.prototype.interpret = function (context) {
+	        return node.interpretBlock(this.condition.eval(context) ? this.trueBranch : this.falseBranch, context);
+	    };
+	
+	    node.Switch = function (token, expression, cases) {
+	        this.token = token;
+	        this.alias = 'switch';
+	        this.expression = expression;
+	        this.cases = cases;
+	    };
+	
+	    node.Switch.prototype.interpret = function (context) {
+	        var value = this.expression.eval(context);
+	        for (var i = 0; i < this.cases.length; i++) {
+	            if (this.cases[i].case.eval(context) === value) {
+	                node.interpretBlock(this.cases[i].body, context);
+	                break;
+	            }
+	        }
+	        return context;
+	    };
+	}
+	;
+
+
+/***/ },
+/* 16 */
+/***/ function(module, exports) {
+
+	module.exports = function (node, constants) {
+	    var BinaryOperation = function (token, left, right, alias) {
+	        this.alias = alias;
+	        this.token = token;
+	        this.left = left;
+	        this.right = right;
+	        this.arity = constants.BINARY;
+	    };
+	
+	    function defineBinaryOperation(className) {
+	        node[className] = function (token, left, right) {
+	            BinaryOperation.call(this, token, left, right, className);
+	        };
+	        node[className].prototype = new BinaryOperation();
+	    }
+	
+	    defineBinaryOperation('SumOperation');
+	    node.SumOperation.prototype.eval = function (context) {
+	        return this.left.eval(context) + this.right.eval(context);
+	    };
+	
+	    defineBinaryOperation('DiffOperation');
+	    node.DiffOperation.prototype.eval = function (context) {
+	        return this.left.eval(context) - this.right.eval(context);
+	    };
+	
+	    defineBinaryOperation('MulOperation');
+	    node.MulOperation.prototype.eval = function (context) {
+	        return this.left.eval(context) * this.right.eval(context);
+	    };
+	
+	    defineBinaryOperation('DivOperation');
+	    node.DivOperation.prototype.eval = function (context) {
+	        return Math.floor(this.left.eval(context) / this.right.eval(context));
+	    };
+	
+	    defineBinaryOperation('ModOperation');
+	    node.ModOperation.prototype.eval = function (context) {
+	        return this.left.eval(context) % this.right.eval(context);
+	    };
+	
+	    defineBinaryOperation('ExpOperation');
+	    node.ExpOperation.prototype.eval = function (context) {
+	        return Math.pow(this.left.eval(context), this.right.eval(context));
+	    };
+	
+	    defineBinaryOperation('AndOperation');
+	    node.AndOperation.prototype.eval = function (context) {
+	        return this.left.eval(context) && this.right.eval(context);
+	    };
+	
+	    defineBinaryOperation('OrOperation');
+	    node.OrOperation.prototype.eval = function (context) {
+	        return this.left.eval(context) || this.right.eval(context);
+	    };
+	
+	    defineBinaryOperation('NotEqualOperation');
+	    node.NotEqualOperation.prototype.eval = function (context) {
+	        return this.left.eval(context) !== this.right.eval(context);
+	    };
+	
+	    defineBinaryOperation('EqOperation');
+	    node.EqOperation.prototype.eval = function (context) {
+	        return this.left.eval(context) === this.right.eval(context);
+	    };
+	
+	    defineBinaryOperation('LessOperation');
+	    node.LessOperation.prototype.eval = function (context) {
+	        return this.left.eval(context) < this.right.eval(context);
+	    };
+	
+	    defineBinaryOperation('GraterOperation');
+	    node.GraterOperation.prototype.eval = function (context) {
+	        return this.left.eval(context) > this.right.eval(context);
+	    };
+	
+	    defineBinaryOperation('LessEqualOperation');
+	    node.LessEqualOperation.prototype.eval = function (context) {
+	        return this.left.eval(context) <= this.right.eval(context);
+	    };
+	
+	    defineBinaryOperation('GreaterEqualOperation');
+	    node.GreaterEqualOperation.prototype.eval = function (context) {
+	        return this.left.eval(context) >= this.right.eval(context);
+	    };
+	}
+	;
+
+
+/***/ },
+/* 17 */
+/***/ function(module, exports) {
+
+	module.exports = function (node) {
+	    node.NotOperation = function (token, expression) {
+	        this.token = token;
+	        this.expression = expression;
+	        this.alias = 'not';
+	    };
+	
+	    node.NotOperation.prototype.eval = function (context) {
+	        return !this.expression.eval(context);
+	    };
+	
+	    node.SubstractionOperation = function (token, expression) {
+	        this.token = token;
+	        this.expression = expression;
+	        this.alias = '-';
+	    };
+	
+	    node.SubstractionOperation.prototype.eval = function (context) {
+	        return -this.expression.eval(context);
+	    };
+	}
+	;
+
+
+/***/ },
+/* 18 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var getValue = __webpack_require__(19);
+	
+	module.exports = function (node, constants) {
+	    node.HasStones = function (token, parameters) {
+	        this.token = token;
+	        this.arity = constants.EXPRESSION;
+	        this.alias = 'hasStones';
+	        this.parameters = parameters;
+	    };
+	
+	    node.HasStones.prototype.eval = function (context) {
+	        var value = getValue(node, this.token, this.parameters, context, 'Color');
+	        return context.board().amountStones(value) > 0;
+	    };
+	
+	    node.CanMove = function (token, parameters) {
+	        this.token = token;
+	        this.arity = constants.EXPRESSION;
+	        this.alias = 'canMove';
+	        this.parameters = parameters;
+	    };
+	
+	    node.CanMove.prototype.eval = function (context) {
+	        var value = getValue(node, this.token, this.parameters, context, 'Dirección');
+	        return context.board().canMove(value);
+	    };
+	
+	    node.NumStones = function (token, parameters) {
+	        this.token = token;
+	        this.arity = constants.EXPRESSION;
+	        this.alias = 'numStones';
+	        this.parameters = parameters;
+	    };
+	
+	    node.NumStones.prototype.eval = function (context) {
+	        var value = getValue(node, this.token, this.parameters, context, 'Color');
+	        return context.board().amountStones(value);
+	    };
+	
+	    node.MinDir = function (token, parameters) {
+	        this.token = token;
+	        this.arity = constants.EXPRESSION;
+	        this.alias = 'minDir';
+	        this.parameters = parameters;
+	    };
+	
+	    node.MinDir.prototype.eval = function (context) {
+	        return context.nativeRepresentations().minDir;
+	    };
+	
+	    node.MaxDir = function (token, parameters) {
+	        this.token = token;
+	        this.arity = constants.EXPRESSION;
+	        this.alias = 'maxDir';
+	        this.parameters = parameters;
+	    };
+	
+	    node.MaxDir.prototype.eval = function (context) {
+	        return context.nativeRepresentations().maxDir;
+	    };
+	
+	    node.MaxColor = function (token, parameters) {
+	        this.token = token;
+	        this.arity = constants.EXPRESSION;
+	        this.alias = 'maxColor';
+	        this.parameters = parameters;
+	    };
+	
+	    node.MaxColor.prototype.eval = function (context) {
+	        return context.nativeRepresentations().maxColor;
+	    };
+	
+	    node.MinColor = function (token, parameters) {
+	        this.token = token;
+	        this.arity = constants.EXPRESSION;
+	        this.alias = 'minColor';
+	        this.parameters = parameters;
+	    };
+	
+	    node.MinColor.prototype.eval = function (context) {
+	        return context.nativeRepresentations().minColor;
+	    };
+	
+	    node.MinBool = function (token, parameters) {
+	        this.token = token;
+	        this.arity = constants.EXPRESSION;
+	        this.alias = 'minBool';
+	        this.parameters = parameters;
+	    };
+	
+	    node.MinBool.prototype.eval = function () {
+	        return false;
+	    };
+	
+	    node.MaxBool = function (token, parameters) {
+	        this.token = token;
+	        this.arity = constants.EXPRESSION;
+	        this.alias = 'maxBool';
+	        this.parameters = parameters;
+	    };
+	
+	    node.MaxBool.prototype.eval = function () {
+	        return true;
+	    };
+	};
+
+
+/***/ },
+/* 19 */
+/***/ function(module, exports) {
+
+	module.exports = function (node, token, parameters, context, expectedType, options) {
+	    var parameter = parameters[0];
+	
+	    var finalNode = parameter.eval(context, {});
+	    var value = (finalNode !== undefined && finalNode.value !== undefined) ? finalNode.value : finalNode;
+	
+	    if (finalNode !== undefined && finalNode.type !== undefined && expectedType !== undefined && finalNode.type !== expectedType) {
+	        throw new node.errors.InterpreterException('Se esperaba un valor de tipo "' + expectedType + '" pero se encontró uno de tipo "' + finalNode.type + '".', token, {code: 'type_mismatch', detail: {expected: expectedType, actual: finalNode.type}});
+	    }
+	
+	    if (value === undefined) {
+	        var name = parameter.token.value;
+	        var subject = (name[0] && name[0] === name[0].toUpperCase()) ?
+	            {name: 'El literal', code: 'undefined_literal'} :
+	            {name: 'El nombre', code: 'undefined_variable'};
+	
+	        throw new node.errors.InterpreterException(subject.name + ' "' + parameter.token.value + '" no existe.', parameter.token, {code: subject.code, detail: parameter.token.value});
+	    }
+	
+	    return parameter.eval(context, options);
+	};
+
+
+/***/ },
+/* 20 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var getValue = __webpack_require__(19);
+	
+	module.exports = function (node, constants) {
+	    var snapshot = function (node, context) {
+	        return {token: node.token, names: context.getCurrentNames()};
+	    };
+	
+	    node.MoveClaw = function (token, parameters) {
+	        this.token = token;
+	        this.arity = constants.STM;
+	        this.alias = 'MoveClaw';
+	        this.parameters = parameters;
+	    };
+	
+	    node.MoveClaw.prototype.interpret = function (context) {
+	        var value = getValue(node, this.token, this.parameters, context, 'Dirección');
+	
+	        try {
+	            context.board().move(value, snapshot(this, context));
+	        } catch (err) {
+	            err.on = this.token;
+	            throw err;
+	        }
+	        return context;
+	    };
+	
+	    node.RemoveStone = function (token, parameters) {
+	        this.token = token;
+	        this.arity = constants.STM;
+	        this.alias = 'Grab';
+	        this.parameters = parameters;
+	    };
+	
+	    node.RemoveStone.prototype.interpret = function (context) {
+	        var value = getValue(node, this.token, this.parameters, context, 'Color');
+	
+	        try {
+	            context.board().removeStone(value, snapshot(this, context));
+	        } catch (err) {
+	            err.on = this.token;
+	            throw err;
+	        }
+	        return context;
+	    };
+	
+	    node.PutStone = function (token, parameters) {
+	        this.token = token;
+	        this.arity = constants.STM;
+	        this.alias = 'Drop';
+	        this.parameters = parameters;
+	    };
+	
+	    node.PutStone.prototype.interpret = function (context) {
+	        var value = getValue(node, this.token, this.parameters, context, 'Color');
+	        context.board().putStone(value, snapshot(this, context));
+	        return context;
+	    };
+	
+	    node.MoveToEdge = function (token, parameters) {
+	        this.token = token;
+	        this.arity = constants.STM;
+	        this.alias = 'MoveToEdge';
+	        this.parameters = parameters;
+	    };
+	
+	    node.MoveToEdge.prototype.interpret = function (context) {
+	        var value = getValue(node, this.token, this.parameters, context, 'Dirección');
+	        context.board().moveToEdge(value, snapshot(this, context));
+	        return context;
+	    };
+	
+	    node.CleanBoard = function (token, parameters) {
+	        this.token = token;
+	        this.arity = constants.STM;
+	        this.alias = 'CleanBoard';
+	        this.parameters = parameters;
+	    };
+	
+	    node.CleanBoard.prototype.interpret = function (context) {
+	        context.board().clear(snapshot(this, context));
+	        return context;
+	    };
+	
+	    node.Boom = function (token, parameters) {
+	        this.token = token;
+	        this.arity = constants.STM;
+	        this.alias = 'BOOM';
+	        this.parameters = parameters;
+	    };
+	
+	    node.Boom.prototype.interpret = function (context) {
+	        try {
+	            context.board().boom(this.parameters[0]);
+	        } catch (err) {
+	            err.on = this.token;
+	            throw err;
+	        }
+	        return context;
+	    };
+	};
+
+
+/***/ },
+/* 21 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var getValue = __webpack_require__(19);
+	
+	module.exports = function (node) {
+	    function evalArguments(token, context, parameters, options) {
+	        var results = [];
+	        if (parameters) {
+	            for (var i = 0; i < parameters.length; i++) {
+	                var value = getValue(node, token, [parameters[i]], context, undefined, options);
+	                results.push(value);
+	            }
+	        }
+	        return results;
+	    }
+	
+	    function fillParameters(context, parameters, declaration, node, token) {
+	        // TODO: no se pueden reasignar valores a los parámetros
+	        if (declaration.parameters) {
+	            if (declaration.parameters.length !== parameters.length) {
+	                throw new node.errors.InterpreterException('Se esperaban ' + declaration.parameters.length + ' argumentos pero se obtuvieron ' + parameters.length + '.', token, {code: 'wrong_arity', detail: {expected: declaration.parameters.length, actual: parameters.length}});
+	            }
+	            for (var i = 0; i < declaration.parameters.length; i++) {
+	                context.put(declaration.parameters[i].value, parameters[i], node, token);
+	            }
+	        }
+	    }
+	
+	    // TODO: el mundo de las variables, índices y parámetros debe ser disjunto por body!!
+	
+	    node.ProcedureCall = function (token, declarationProvider, parameters) {
+	        this.token = token;
+	        this.arity = 'routine';
+	        this.alias = 'ProcedureCall';
+	        this.name = token.value;
+	        this.parameters = parameters;
+	        this.declarationProvider = declarationProvider;
+	    };
+	
+	    node.ProcedureCall.prototype.interpret = function (context) {
+	        var target = this.declarationProvider();
+	        if (!target.declaration) {
+	            throw new node.errors.InterpreterException('El procedimiento ' + this.name + ' no se encuentra definido.', this, {code: 'undefined_procedure', detail: this.name});
+	        }
+	        var declaration = target.declaration;
+	        var parameterValues = evalArguments(this.token, context, this.parameters, {});
+	        context.startContext(this.name);
+	        fillParameters(context, parameterValues, declaration, node, this.token);
+	        node.interpretBlock(declaration.body, context);
+	        context.stopContext();
+	        return context;
+	    };
+	
+	    node.FunctionCall = function (token, declarationProvider, parameters) {
+	        this.token = token;
+	        this.arity = 'routine';
+	        this.alias = 'FunctionCall';
+	        this.name = token.value;
+	        this.parameters = parameters;
+	        this.declarationProvider = declarationProvider;
+	    };
+	
+	    node.FunctionCall.prototype.eval = function (context, options) {
+	        var target = this.declarationProvider();
+	        if (!target.declaration) {
+	            throw new node.errors.InterpreterException('La función "' + this.name + '" no se encuentra definida.', this.token, {code: 'undefined_function', detail: this.name});
+	        }
+	        var declaration = target.declaration;
+	        var parameterValues = evalArguments(this.token, context, this.parameters, {});
+	        context.startContext(this.name);
+	        context.pushBoard();
+	        fillParameters(context, parameterValues, declaration, node, this.token);
+	        node.interpretBlock(declaration.body, context);
+	        var result = declaration.return.expression.eval(context, options);
+	        context.popBoard();
+	        context.stopContext();
+	        return result;
+	    };
+	}
+	;
+
+
+/***/ },
+/* 22 */
+/***/ function(module, exports) {
+
+	module.exports = function (node) {
+	    node.ProcedureDeclaration = function (token, parameters, body) {
+	        this.token = token;
+	        this.name = token.value;
+	        this.arity = 'routine';
+	        this.alias = 'procedureDeclaration';
+	        this.parameters = parameters || [];
+	        this.body = body || [];
+	    };
+	
+	    node.FunctionDeclaration = function (token, parameters, body, returnExpression) {
+	        this.token = token;
+	        this.name = token.value;
+	        this.arity = 'routine';
+	        this.alias = 'functionDeclaration';
+	        this.parameters = parameters || [];
+	        this.body = body || [];
+	        this.return = returnExpression;
+	    };
+	
+	    node.ReturnStatement = function (token, expression) {
+	        this.token = token;
+	        this.alias = 'return';
+	        this.expression = expression;
+	    };
+	
+	    node.ReturnStatement.prototype.interpret = function (context) {
+	        node.errors.throwParserError(this.token, 'Solo puede usarse return como última sentencia de una función o programa.');
+	        return context;
+	    };
+	};
+
+
+/***/ },
+/* 23 */
+/***/ function(module, exports) {
+
+	module.exports = function (node) {
+	    node.While = function (token, expression, body) {
+	        this.alias = 'while';
+	        this.token = token;
+	        this.expression = expression;
+	        this.body = body;
+	    };
+	
+	    node.While.prototype.interpret = function (context) {
+	        while (this.expression.eval(context)) {
+	            node.interpretBlock(this.body, context);
+	        }
+	        return context;
+	    };
+	
+	    node.Repeat = function (token, expression, body) {
+	        this.alias = 'repeat';
+	        this.token = token;
+	        this.expression = expression;
+	        this.body = body;
+	    };
+	
+	    node.Repeat.prototype.interpret = function (context) {
+	        var value = this.expression.eval(context);
+	        for (var i = 0; i < value; i++) {
+	            node.interpretBlock(this.body, context);
+	        }
+	        return context;
+	    };
+	
+	    node.ForEach = function (token, iterator, items, body) {
+	        this.alias = 'foreach';
+	        this.token = token;
+	        this.iterator = iterator;
+	        this.items = items;
+	        this.body = body;
+	    };
+	
+	    node.ForEach.prototype.interpret = function (context) {
+	        for (var i = 0; i < this.items.length; i++) {
+	            context.put(this.iterator.token.value, this.items[i].eval(context, {}), node, this.token);
+	            node.interpretBlock(this.body, context);
+	        }
+	
+	        return context;
+	    };
+	};
+
+
+/***/ },
+/* 24 */
+/***/ function(module, exports) {
+
+	module.exports = function (node) {
+	    node.Root = function (program, declarations) {
+	        this.alias = 'root';
+	        this.program = program;
+	        this.declarations = declarations;
+	    };
+	
+	    node.Root.prototype.interpret = function (context) {
+	        return this.program.interpret(context);
+	    };
+	};
+
+
+/***/ },
+/* 25 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var _ = __webpack_require__(3);
+	
+	module.exports = function (node) {
+	    node.Program = function (token, body) {
+	        this.token = token;
+	        this.alias = 'program';
+	        this.body = body || [];
+	
+	        var lastSentence = _.last(this.body);
+	        if (lastSentence && lastSentence.alias === 'return') {
+	            this.returnSentence = this.body.pop();
+	        }
+	    };
+	
+	    node.Program.prototype.interpret = function (context) {
+	        try {
+	            node.interpretBlock(this.body, context);
+	            this._setExitStatus(context);
+	        } catch (err) {
+	            err.context = context;
+	            throw err;
+	        }
+	        return context;
+	    };
+	
+	    node.Program.prototype._setExitStatus = function (context) {
+	        if (this.returnSentence) {
+	            context.exitStatus = this.returnSentence.expression.eval(context);
+	            if (!_.isNumber(context.exitStatus)) {
+	                throw new node.errors.InterpreterException('El programa retornó un valor no numérico.', this.returnSentence.token, {code: 'non_numeric_exit_code', detail: context.exitStatus});
+	            }
+	        }
+	    };
+	};
+
+
+/***/ },
+/* 26 */
+/***/ function(module, exports) {
+
+	module.exports = function (node) {
+	    node.InteractiveProgram = function (token, cases) {
+	        this.token = token;
+	        this.alias = 'interactiveProgram';
+	        this.cases = cases || [];
+	    };
+	
+	    node.InteractiveProgram.prototype.interpret = function (context, onError) {
+	        var self = this;
+	
+	        return {
+	            context: context,
+	            onKey: function (key) {
+	                for (var i = 0; i < self.cases.length; i++) {
+	                    if (self.cases[i].case.value === key) {
+	                        try {
+	                            node.interpretBlock(self.cases[i].body, context);
+	                            break;
+	                        } catch (err) {
+	                            err.context = context;
+	                            onError(err);
+	                        }
+	                    }
+	                }
+	
+	                return context;
+	            }
+	        };
+	    };
+	};
+
+
+/***/ },
+/* 27 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var _ = __webpack_require__(3);
+	var Board = __webpack_require__(28);
 	
 	var randomId = function () {
 	    return Math.floor((1 + Math.random()) * 0x10000);
@@ -19096,10 +19197,10 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 25 */
+/* 28 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var viewAdapter = __webpack_require__(26);
+	var viewAdapter = __webpack_require__(29);
 	
 	var GobstonesError = function (message, reason) {
 	    this.message = message;
@@ -19263,10 +19364,10 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 26 */
+/* 29 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var _ = __webpack_require__(22);
+	var _ = __webpack_require__(3);
 	
 	var viewAdapter = {
 	};
@@ -19320,11 +19421,11 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 27 */
+/* 30 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var Board = __webpack_require__(25);
-	var stringUtils = __webpack_require__(28);
+	var Board = __webpack_require__(28);
+	var stringUtils = __webpack_require__(31);
 	
 	var gbbReader = {
 	};
@@ -19426,7 +19527,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 28 */
+/* 31 */
 /***/ function(module, exports) {
 
 	module.exports = {
@@ -19452,7 +19553,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 29 */
+/* 32 */
 /***/ function(module, exports) {
 
 	var gbbWriter = {
