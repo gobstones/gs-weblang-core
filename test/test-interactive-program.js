@@ -6,7 +6,7 @@ utils.testProgram('interactive/basic-interactive.gbs', function (t, interactiveP
     t.throws(function () {
         context.get('a');
     });
-    var newContext = interactiveProgram.onKey(1);
+    var newContext = interactiveProgram.onKey('TECLA_CUALQUIERA');
     t.is(newContext, context);
     t.is(context.get('a'), 33);
 });
