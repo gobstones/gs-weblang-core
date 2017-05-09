@@ -19081,7 +19081,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	        this.cases = cases || [];
 	    };
 	
-	    node.InteractiveProgram.prototype.interpret = function (context, onError) {
+	    node.InteractiveProgram.prototype.interpret = function (context) {
 	        var self = this;
 	
 	        return {
@@ -19094,7 +19094,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	                            break;
 	                        } catch (err) {
 	                            err.context = context;
-	                            onError(err);
+	                            return {error: err};
 	                        }
 	                    }
 	                }
