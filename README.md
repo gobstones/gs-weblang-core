@@ -54,6 +54,7 @@ try { require("./lib/gbs").getParser().parse(code).interpret(new (require("./lib
 ### deploy
 ```bash
 git checkout master
+git pull
 git pull origin dev
 
 npm run-script build
