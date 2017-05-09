@@ -1,0 +1,5 @@
+interactive program {
+    K_H -> { }
+    K_SHIFT_D -> { }
+    K_ENTER -> { }
+}
