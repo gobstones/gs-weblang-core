@@ -19072,8 +19072,10 @@ return /******/ (function(modules) { // webpackBootstrap
 
 /***/ },
 /* 26 */
-/***/ function(module, exports) {
+/***/ function(module, exports, __webpack_require__) {
 
+	var _ = __webpack_require__(3);
+	
 	module.exports = function (node) {
 	    node.InteractiveProgram = function (token, cases) {
 	        this.token = token;
@@ -19086,6 +19088,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	
 	        return {
 	            context: context,
+	            keys: _.map(self.cases, 'case.value'),
 	            onKey: function (key) {
 	                for (var i = 0; i < self.cases.length; i++) {
 	                    if (self.cases[i].case.value === key) {
