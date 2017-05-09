@@ -10,3 +10,7 @@ utils.testProgram('interactive/basic-interactive.gbs', function (t, interactiveP
     t.is(newContext, context);
     t.is(context.get('a'), 33);
 });
+
+utils.testProgram('interactive/many-keys.gbs', function (t, interactiveProgram) {
+    t.deepEqual(interactiveProgram.keys, ['K_H', 'K_SHIFT_D', 'K_ENTER']);
+});
