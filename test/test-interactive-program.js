@@ -12,5 +12,5 @@ utils.testProgram('interactive/basic-interactive.gbs', function (t, interactiveP
 });
 
 utils.testProgram('interactive/many-keys.gbs', function (t, interactiveProgram) {
-    t.deepEqual(interactiveProgram.keys, ['K_H', 'K_SHIFT_D', 'K_SHIFT_ARROW_DOWN', 'K_ENTER']);
+    t.deepEqual(interactiveProgram.keys, ['K_H', 'K_SHIFT_D', 'K_SHIFT_ARROW_DOWN', 'K_CTRL_ALT_SHIFT_L_BRACKET', 'K_ENTER']);
 });
