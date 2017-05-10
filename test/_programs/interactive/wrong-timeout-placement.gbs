@@ -1,0 +1,5 @@
+interactive program {
+    INIT -> { }
+    TIMEOUT(200) -> { }
+    K_2 -> { Poner(Rojo) }
+}

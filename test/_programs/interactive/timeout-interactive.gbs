@@ -1,0 +1,5 @@
+interactive program {
+    INIT -> { a := 1 }
+    K_SHIFT_D -> { a := 33 }
+    TIMEOUT(258) -> { }
+}

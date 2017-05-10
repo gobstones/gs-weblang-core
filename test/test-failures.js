@@ -114,5 +114,22 @@ utils.testProgramFailure('unknown-literal-in-any-procedure.gbs', function (t, re
 });
 
 utils.testProgramFailure('interactive/wrong-keys.gbs', function (t, reason) {
-    t.is(reason.error, 'La rama número 2 no es una tecla válida');
+    t.is(reason.error, 'La rama número 2 no contiene una tecla válida');
 });
+
+utils.testProgramFailure('interactive/wrong-init-placement.gbs', function (t, reason) {
+    t.is(reason.error, 'La rama INIT debe ir al principio');
+});
+
+utils.testProgramFailure('interactive/wrong-timeout-placement.gbs', function (t, reason) {
+    t.is(reason.error, 'La rama TIMEOUT(n) debe ir al final');
+});
+
+utils.testProgramFailure('interactive/zero-timeout.gbs', function (t, reason) {
+    t.is(reason.error, 'El argumento de TIMEOUT(n) debe ser un número entre 1 y 60000');
+});
+
+utils.testProgramFailure('interactive/big-timeout.gbs', function (t, reason) {
+    t.is(reason.error, 'El argumento de TIMEOUT(n) debe ser un número entre 1 y 60000');
+});
+
