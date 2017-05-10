@@ -1,5 +1,6 @@
 interactive program {
     K_H -> { }
     K_SHIFT_D -> { }
+    K_SHIFT_ARROW_DOWN -> { }
     K_ENTER -> { }
 }
