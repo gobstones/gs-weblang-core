@@ -425,8 +425,38 @@ return /******/ (function(modules) { // webpackBootstrap
 	
 	        var cases = switchCases();
 	        cases.forEach(function (it, i) {
-	            if (typeof it.case.value !== 'string' || !isValidKey(it.case.value)) {
-	                g.error(token, 'La rama número ' + (i + 1) + ' no es una tecla válida');
+	            var id = i + 1;
+	            var defaultError = 'La rama número ' + id + ' no contiene una tecla válida';
+	
+	            if (it.case.alias === 'ProcedureCall' && it.case.name === 'TIMEOUT') {
+	                if (id !== cases.length) {
+	                    g.error(it.case.token, 'La rama TIMEOUT(n) debe ir al final');
+	                }
+	
+	                var ms = it.case.parameters[0];
+	                if (it.case.parameters.length !== 1 || ms.alias !== 'NumericLiteral' || ms.value < 1 || ms.value > 60000) {
+	                    g.error(ms.token, 'El argumento de TIMEOUT(n) debe ser un número entre 1 y 60000');
+	                }
+	
+	                it.case.timeout = ms.value;
+	                return;
+	            }
+	
+	            if (typeof it.case.value !== 'string') {
+	                g.error(it.case.token, defaultError);
+	            }
+	
+	            if (it.case.value === 'INIT') {
+	                if (i !== 0) {
+	                    g.error(it.case.token, 'La rama INIT debe ir al principio');
+	                }
+	
+	                it.case.init = true;
+	                return;
+	            }
+	
+	            if (!isValidKey(it.case.value)) {
+	                g.error(it.case.token, defaultError);
 	            }
 	        });
 	
@@ -525,7 +555,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	};
 	
 	module.exports = function (keyDef) {
-	    const modifierWithKey = keyDef.substring(2);
+	    var modifierWithKey = keyDef.substring(2);
 	
 	    var modifier = _.find(MODIFIERS, function (it) {
 	        return _.startsWith(modifierWithKey, it);
@@ -19089,23 +19119,43 @@ return /******/ (function(modules) { // webpackBootstrap
 	    node.InteractiveProgram.prototype.interpret = function (context) {
 	        var self = this;
 	
+	        var run = function (branch) {
+	            if (!branch) {
+	                return context;
+	            }
+	
+	            try {
+	                node.interpretBlock(branch.body, context);
+	                return context;
+	            } catch (err) {
+	                err.context = context;
+	                return {error: err};
+	            }
+	        };
+	
+	        var timeoutBranch = _.find(self.cases, function (it) {
+	            return it.case.timeout;
+	        });
+	
 	        return {
 	            context: context,
-	            keys: _.map(self.cases, 'case.value'),
+	            keys: _(self.cases)
+	                .filter(function (it) {
+	                    return !it.case.timeout && !it.case.init;
+	                }).map('case.value').value(),
+	            timeout: timeoutBranch ? timeoutBranch.case.timeout : null,
+	            onInit: function () {
+	                return run(
+	                    _.find(self.cases, {case: {init: true}})
+	                );
+	            },
 	            onKey: function (key) {
-	                for (var i = 0; i < self.cases.length; i++) {
-	                    if (self.cases[i].case.value === key) {
-	                        try {
-	                            node.interpretBlock(self.cases[i].body, context);
-	                            break;
-	                        } catch (err) {
-	                            err.context = context;
-	                            return {error: err};
-	                        }
-	                    }
-	                }
-	
-	                return context;
+	                return run(
+	                    _.find(self.cases, {case: {value: key}})
+	                );
+	            },
+	            onTimeout: function () {
+	                return run(timeoutBranch);
 	            }
 	        };
 	    };
