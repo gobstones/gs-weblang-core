@@ -18862,7 +18862,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	
 	    node.Boom.prototype.interpret = function (context) {
 	        try {
-	            context.board().boom(this.parameters[0]);
+	            context.board().boom(this.parameters[0], snapshot(this, context));
 	        } catch (err) {
 	            err.on = this.token;
 	            throw err;
@@ -19373,7 +19373,8 @@ return /******/ (function(modules) { // webpackBootstrap
 	
 	// -------------
 	
-	Board.prototype.boom = function (message) {
+	Board.prototype.boom = function (message, snapshot) {
+	    this.saveSnapshot(snapshot);
 	    throw new GobstonesError(message, {code: 'boom_called'});
 	};
 	
