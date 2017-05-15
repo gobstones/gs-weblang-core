@@ -1,0 +1,7 @@
+interactive program {
+    K_H -> { }
+    K_SHIFT_D -> { }
+    K_SHIFT_ARROW_DOWN -> { }
+    K_CTRL_ALT_SHIFT_L_BRACKET -> { }
+    K_ENTER -> { }
+}
