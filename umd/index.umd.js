@@ -18048,10 +18048,12 @@ return /******/ (function(modules) { // webpackBootstrap
 	};
 	
 	Scope.prototype.define = function (identifier) {
-	    var t = this.def[identifier.value];
-	    if (typeof t === 'object') {
-	        errors.throwParserError(identifier, t.reserved ? 'Already reserved.' : 'Already defined.');
+	    var t = this.find(identifier.value);
+	
+	    if (typeof t === 'object' && t.arity === 'name') {
+	        errors.throwParserError(identifier, t.reserved ? 'Este nombre está reservado.' : 'Este nombre ya está definido.');
 	    }
+	
 	    this.def[identifier.value] = identifier;
 	    identifier.reserved = false;
 	    identifier.nud = itself;
