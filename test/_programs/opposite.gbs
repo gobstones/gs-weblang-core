@@ -1,0 +1,8 @@
+program {
+    Mover(opuesto(Sur))
+    Mover(opuesto(Oeste))
+    Mover(opuesto(Este))
+    Mover(opuesto(Norte))
+
+    Mover(opuesto(Oeste))
+}
