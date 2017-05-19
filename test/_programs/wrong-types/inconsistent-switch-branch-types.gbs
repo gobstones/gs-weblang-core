@@ -1,0 +1,5 @@
+program {
+    switch (Rojo) {
+        2 -> Mover(Norte)
+    }
+}
