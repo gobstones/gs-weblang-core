@@ -61,8 +61,8 @@ utils.testProgramFailure('wrong-types/opposite-red.gbs', function (t, reason) {
 });
 
 utils.testProgramFailure('wrong-types/inconsistent-assignment-1.gbs', function (t, reason) {
-    t.is(reason.message, 'No se puede asignar a "a" un valor de tipo "Dirección" ya que es de tipo "number".');
-    t.deepEqual(reason.reason, {code: 'inconsistent_assignment', detail: {expected: 'number', actual: 'Dirección'}});
+    t.is(reason.message, 'No se puede asignar a "a" un valor de tipo "Dirección" ya que es de tipo "Número".');
+    t.deepEqual(reason.reason, {code: 'inconsistent_assignment', detail: {expected: 'Número', actual: 'Dirección'}});
     t.deepEqual(reason.on.range.start, {row: 2, column: 5});
 });
 
@@ -76,6 +76,12 @@ utils.testProgramFailure('wrong-types/wrong-arity.gbs', function (t, reason) {
     t.is(reason.message, 'Se esperaban 2 argumentos pero se obtuvieron 1.');
     t.deepEqual(reason.reason, {code: 'wrong_arity', detail: {expected: 2, actual: 1}});
     t.deepEqual(reason.on.range.start, {row: 6, column: 5});
+});
+
+utils.testProgramFailure('wrong-types/inconsistent-switch-branch-types.gbs', function (t, reason) {
+    t.is(reason.message, 'Se esperaba un valor de tipo "Color" pero se encontró uno de tipo "Número".');
+    t.deepEqual(reason.reason, {code: 'type_mismatch', detail: {expected: 'Color', actual: 'Número'}});
+    t.deepEqual(reason.on.range.start, {row: 2, column: 9});
 });
 
 utils.testProgramFailure('user-boom/good-boom.gbs', function (t, reason) {
