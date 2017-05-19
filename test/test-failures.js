@@ -54,6 +54,12 @@ utils.testProgramFailure('wrong-types/numberofstones-east.gbs', function (t, rea
     t.deepEqual(reason.on.range.start, {row: 1, column: 20});
 });
 
+utils.testProgramFailure('wrong-types/opposite-red.gbs', function (t, reason) {
+    t.is(reason.message, 'Se esperaba un valor de tipo "Dirección" pero se encontró uno de tipo "Color".');
+    t.deepEqual(reason.reason, {code: 'type_mismatch', detail: {expected: 'Dirección', actual: 'Color'}});
+    t.deepEqual(reason.on.range.start, {row: 1, column: 17});
+});
+
 utils.testProgramFailure('wrong-types/inconsistent-assignment-1.gbs', function (t, reason) {
     t.is(reason.message, 'No se puede asignar a "a" un valor de tipo "Dirección" ya que es de tipo "number".');
     t.deepEqual(reason.reason, {code: 'inconsistent_assignment', detail: {expected: 'number', actual: 'Dirección'}});
