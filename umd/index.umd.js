@@ -313,6 +313,10 @@ return /******/ (function(modules) { // webpackBootstrap
 	        return new gbs.node.Boom(token, [message]);
 	    });
 	
+	    define.prefix(TOKEN_NAMES.OPPOSITE, function () {
+	        return new gbs.node.Opposite(g.token, parameterListCall(g));
+	    });
+	
 	    define.prefix(TOKEN_NAMES.HAS_STONES, function () {
 	        return new gbs.node.HasStones(g.token, parameterListCall(g));
 	    });
@@ -18635,6 +18639,20 @@ return /******/ (function(modules) { // webpackBootstrap
 	var getValue = __webpack_require__(19);
 	
 	module.exports = function (node, constants) {
+	    node.Opposite = function (token, parameters) {
+	        this.token = token;
+	        this.arity = constants.EXPRESSION;
+	        this.alias = 'opposite';
+	        this.parameters = parameters;
+	    };
+	
+	    node.Opposite.prototype.eval = function (context) {
+	        var value = getValue(node, this.token, this.parameters, context, 'Dirección');
+	        return value.map(function (x) {
+	            return -x;
+	        });
+	    };
+	
 	    node.HasStones = function (token, parameters) {
 	        this.token = token;
 	        this.arity = constants.EXPRESSION;
