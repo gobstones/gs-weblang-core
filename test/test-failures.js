@@ -146,6 +146,6 @@ utils.testProgramFailure('interactive/big-timeout.gbs', function (t, reason) {
 });
 
 utils.testProgramFailure('already-defined.gbs', function (t, reason) {
-    t.is(reason.error, 'Este nombre ya está definido.');
+    t.is(reason.error, 'El nombre "Hola" ya está definido.');
     t.deepEqual(reason.on.range.start, {row: 7, column: 11});
 });
