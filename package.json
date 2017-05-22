@@ -47,6 +47,7 @@
   "xo": {
     "space": 4,
     "ignores": [
+      "lib/locales/**",
       "tools/**",
       "umd/**",
       "newlib/**"

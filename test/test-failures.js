@@ -1,7 +1,7 @@
 var utils = require('./_utils');
 
 utils.testProgramFailure('boom.gbs', function (t, reason) {
-    t.is(reason.message, 'El procedimiento Boomba no se encuentra definido.');
+    t.is(reason.message, 'El procedimiento "Boomba" no se encuentra definido.');
     t.deepEqual(reason.reason, {code: 'undefined_procedure', detail: {name: 'Boomba'}});
     t.deepEqual(reason.on.range.start, {row: 1, column: 5});
 });
@@ -104,7 +104,7 @@ utils.testProgramFailure('user-boom/with-no-closing-quote.gbs', function (t, rea
 var testUnexpectedConstant = function (fileName) {
     utils.testProgramFailure(fileName, function (t, reason) {
         t.is(reason.message, 'El nombre "cualquierCosa" no existe.');
-        t.deepEqual(reason.reason, {code: 'undefined_variable', detail: {name: 'cualquierCosa'}});
+        t.deepEqual(reason.reason, {code: 'undefined_name', detail: {name: 'cualquierCosa'}});
         t.deepEqual(reason.on.range.start, {row: 1, column: 11});
     });
 };
