@@ -266,7 +266,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	
 	    define.infixr(':=', 10, function (left) {
 	        if (left.id !== '.' && left.id !== '[' && (!left.token || left.token.arity !== 'name')) {
-	            g.error(left, {code: 'only_identifiers_can_be_used_in_assignation'});
+	            g.error(left, {code: 'only_identifiers_can_be_used_in_assignment'});
 	        }
 	        return new gbs.node.Assignment({}, left, g.expression(9));
 	    });
@@ -485,7 +485,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	
 	        var ret = body.pop();
 	        if (!ret || ret.alias !== 'return' || !ret.expression) {
-	            g.error(token, {code: 'function_must_end_with_return'});
+	            g.error(token, {code: 'function_must_end_with_return', detail: {name: token.value}});
 	        }
 	        g.scope.pop();
 	        var declaration = new gbs.node.FunctionDeclaration(token, parameters, body, ret);
@@ -502,7 +502,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	        var token = g.token;
 	        if (g.token.arity === 'name') {
 	            if (g.token.value[0] !== g.token.value[0].toUpperCase()) {
-	                g.error(token, {code: 'procedure_name_should_start_with_uppercase'});
+	                g.error(token, {code: 'procedure_name_should_start_with_uppercase', detail: {name: token.value}});
 	            }
 	            g.scope.define(token);
 	            g.advance();
@@ -18095,7 +18095,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	    no_root_declaration: 'Se esperaba una definición de programa, función o procedimiento.',
 	    not_a_function_or_procedure: '<%=name%> no es una función o procedimiento.',
 	    not_defined: 'No definido.',
-	    only_identifiers_can_be_used_in_assignation: 'Del lado izquierdo de la asignación sólo pueden usarse identificadores.',
+	    only_identifiers_can_be_used_in_assignment: 'Del lado izquierdo de la asignación sólo pueden usarse identificadores.',
 	    place_init_at_the_start: 'La rama INIT debe ir al principio.',
 	    place_timeout_at_the_end: 'La rama TIMEOUT(n) debe ir al final.',
 	    procedure_name_should_start_with_uppercase: 'El nombre del procedimiento <%=name%> debe empezar con mayúscula.',
