@@ -52,23 +52,24 @@ return /******/ (function(modules) { // webpackBootstrap
 /************************************************************************/
 /******/ ([
 /* 0 */
-/***/ (function(module, exports, __webpack_require__) {
+/***/ function(module, exports, __webpack_require__) {
 
 	var gbs = {};
 	var grammar = __webpack_require__(1);
 	
 	gbs.Parser = __webpack_require__(6);
-	gbs.Lexer = __webpack_require__(9);
-	gbs.node = __webpack_require__(10);
+	gbs.Lexer = __webpack_require__(11);
+	gbs.node = __webpack_require__(12);
 	gbs.errors = __webpack_require__(7);
-	gbs.Context = __webpack_require__(28);
-	gbs.Board = __webpack_require__(29);
+	gbs.Context = __webpack_require__(30);
+	gbs.Board = __webpack_require__(31);
+	gbs.i18n = __webpack_require__(8);
 	
 	gbs.gbb = {
-	    reader: __webpack_require__(31),
-	    builder: __webpack_require__(33)
+	    reader: __webpack_require__(33),
+	    builder: __webpack_require__(35)
 	};
-	gbs.viewAdapter = __webpack_require__(30);
+	gbs.viewAdapter = __webpack_require__(32);
 	
 	gbs.getParser = function () {
 	    return grammar(gbs);
@@ -77,9 +78,9 @@ return /******/ (function(modules) { // webpackBootstrap
 	module.exports = gbs;
 
 
-/***/ }),
+/***/ },
 /* 1 */
-/***/ (function(module, exports, __webpack_require__) {
+/***/ function(module, exports, __webpack_require__) {
 
 	var isValidKey = __webpack_require__(2);
 	var TOKEN_NAMES = __webpack_require__(5);
@@ -136,7 +137,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	        if (g.token.id !== ')') {
 	            for (; ;) {
 	                if (g.token.arity !== 'name') {
-	                    g.error(g.token, 'Se esperaba un nombre de parámetro.');
+	                    g.error(g.token, {code: 'expecting_parameter_name'});
 	                }
 	                parameters.push(g.token);
 	                g.advance();
@@ -246,7 +247,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	        left.token = left.token || left;
 	
 	        if (left.token.arity !== 'name') {
-	            gbs.errors.throwParserError(left, left.token.value + ' no es una función o procedimiento');
+	            g.error(left, {code: 'not_a_function_or_procedure', detail: {name: left.token.value}});
 	        }
 	        var parameters = commaSeparatedArguments(g);
 	        g.advance(')');
@@ -265,7 +266,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	
 	    define.infixr(':=', 10, function (left) {
 	        if (left.id !== '.' && left.id !== '[' && (!left.token || left.token.arity !== 'name')) {
-	            g.error(left, 'Del lado izquierdo de la asignación sólo pueden usarse identificadores');
+	            g.error(left, {code: 'only_identifiers_can_be_used_in_assignation'});
 	        }
 	        return new gbs.node.Assignment({}, left, g.expression(9));
 	    });
@@ -295,13 +296,13 @@ return /******/ (function(modules) { // webpackBootstrap
 	        var token = g.token;
 	        var start = g.tokens.buf.indexOf('"', g.tokens.from - 1);
 	        if (start < 0) {
-	            gbs.errors.throwParserError(g.token, 'Se esperaba un mensaje de error entre comillas');
+	            g.error(g.token, {code: 'expecting_error_message'});
 	        }
 	
 	        g.advance('"');
 	        var end = g.tokens.buf.indexOf('"', start + 1);
 	        if (end < 0) {
-	            gbs.errors.throwParserError(g.token, 'Se esperaba un cierre de comillas');
+	            g.error(g.token, {code: 'expecting_final_quotes'});
 	        }
 	        var message = g.tokens.buf.substring(start + 1, end);
 	        while (g.token.id !== '"') {
@@ -392,7 +393,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	        // foreach dir in [minDir() .. maxDir()]
 	        var iterator = g.expression();
 	        if (iterator.token.arity !== 'name') {
-	            g.error(iterator.token, 'El foreach espera un identificador sobre el cual iterar');
+	            g.error(iterator.token, {code: 'foreach_expects_an_identifier'});
 	        }
 	        g.advance(TOKEN_NAMES.IN);
 	        g.advance('[');
@@ -430,16 +431,16 @@ return /******/ (function(modules) { // webpackBootstrap
 	        var cases = switchCases();
 	        cases.forEach(function (it, i) {
 	            var id = i + 1;
-	            var defaultError = 'La rama número ' + id + ' no contiene una tecla válida';
+	            var defaultError = {code: 'invalid_key', detail: {n: id}};
 	
 	            if (it.case.alias === 'ProcedureCall' && it.case.name === 'TIMEOUT') {
 	                if (id !== cases.length) {
-	                    g.error(it.case.token, 'La rama TIMEOUT(n) debe ir al final');
+	                    g.error(it.case.token, {code: 'place_timeout_at_the_end'});
 	                }
 	
 	                var ms = it.case.parameters[0];
 	                if (it.case.parameters.length !== 1 || ms.alias !== 'NumericLiteral' || ms.value < 1 || ms.value > 60000) {
-	                    g.error(ms.token, 'El argumento de TIMEOUT(n) debe ser un número entre 1 y 60000');
+	                    g.error(ms.token, {code: 'timeout_outside_bounds'});
 	                }
 	
 	                it.case.timeout = ms.value;
@@ -452,7 +453,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	
 	            if (it.case.value === 'INIT') {
 	                if (i !== 0) {
-	                    g.error(it.case.token, 'La rama INIT debe ir al principio');
+	                    g.error(it.case.token, {code: 'place_init_at_the_start'});
 	                }
 	
 	                it.case.init = true;
@@ -472,19 +473,19 @@ return /******/ (function(modules) { // webpackBootstrap
 	        var token = g.token;
 	        if (g.token.arity === 'name') {
 	            if (g.token.value[0] !== g.token.value[0].toLowerCase()) {
-	                g.error(token, 'El nombre de la función ' + token.value + ' debe empezar con minúscula');
+	                g.error(token, {code: 'function_name_should_start_with_lowercase', detail: {name: token.value}});
 	            }
 	            g.scope.define(token);
 	            g.advance();
 	        } else {
-	            g.error(token, 'Se esperaba un nombre de función');
+	            g.error(token, {code: 'expecting_function_name'});
 	        }
 	        var parameters = parameterDeclarationList(g);
 	        var body = bodyStatement(g);
 	
 	        var ret = body.pop();
 	        if (!ret || ret.alias !== 'return' || !ret.expression) {
-	            g.error(token, 'La función ' + token.value + ' debe terminar con un ' + TOKEN_NAMES.RETURN);
+	            g.error(token, {code: 'function_must_end_with_return'});
 	        }
 	        g.scope.pop();
 	        var declaration = new gbs.node.FunctionDeclaration(token, parameters, body, ret);
@@ -501,12 +502,12 @@ return /******/ (function(modules) { // webpackBootstrap
 	        var token = g.token;
 	        if (g.token.arity === 'name') {
 	            if (g.token.value[0] !== g.token.value[0].toUpperCase()) {
-	                g.error(token, 'El nombre del procedimiento ' + token.value + ' debe empezar con mayúscula');
+	                g.error(token, {code: 'procedure_name_should_start_with_uppercase'});
 	            }
 	            g.scope.define(token);
 	            g.advance();
 	        } else {
-	            g.error(token, 'Se esperaba un nombre de procedimiento');
+	            g.error(token, {code: 'expecting_procedure_name'});
 	        }
 	        var parameters = parameterDeclarationList(g);
 	        var body = bodyStatement();
@@ -535,9 +536,9 @@ return /******/ (function(modules) { // webpackBootstrap
 	};
 
 
-/***/ }),
+/***/ },
 /* 2 */
-/***/ (function(module, exports, __webpack_require__) {
+/***/ function(module, exports, __webpack_require__) {
 
 	var _ = __webpack_require__(3);
 	
@@ -571,9 +572,9 @@ return /******/ (function(modules) { // webpackBootstrap
 	};
 
 
-/***/ }),
+/***/ },
 /* 3 */
-/***/ (function(module, exports, __webpack_require__) {
+/***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_RESULT__;/* WEBPACK VAR INJECTION */(function(global, module) {/**
 	 * @license
@@ -589,7 +590,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	  var undefined;
 	
 	  /** Used as the semantic version number. */
-	  var VERSION = '4.17.4';
+	  var VERSION = '4.17.2';
 	
 	  /** Used as the size to enable large array optimizations. */
 	  var LARGE_ARRAY_SIZE = 200;
@@ -2144,9 +2145,9 @@ return /******/ (function(modules) { // webpackBootstrap
 	     * Shortcut fusion is an optimization to merge iteratee calls; this avoids
 	     * the creation of intermediate arrays and can greatly reduce the number of
 	     * iteratee executions. Sections of a chain sequence qualify for shortcut
-	     * fusion if the section is applied to an array and iteratees accept only
-	     * one argument. The heuristic for whether a section qualifies for shortcut
-	     * fusion is subject to change.
+	     * fusion if the section is applied to an array of at least `200` elements
+	     * and any iteratees accept only one argument. The heuristic for whether a
+	     * section qualifies for shortcut fusion is subject to change.
 	     *
 	     * Chaining is supported in custom builds as long as the `_#value` method is
 	     * directly or indirectly included in the build.
@@ -2305,8 +2306,8 @@ return /******/ (function(modules) { // webpackBootstrap
 	
 	    /**
 	     * By default, the template delimiters used by lodash are like those in
-	     * embedded Ruby (ERB) as well as ES2015 template strings. Change the
-	     * following template settings to use alternative delimiters.
+	     * embedded Ruby (ERB). Change the following template settings to use
+	     * alternative delimiters.
 	     *
 	     * @static
 	     * @memberOf _
@@ -2453,7 +2454,8 @@ return /******/ (function(modules) { // webpackBootstrap
 	          resIndex = 0,
 	          takeCount = nativeMin(length, this.__takeCount__);
 	
-	      if (!isArr || (!isRight && arrLength == length && takeCount == length)) {
+	      if (!isArr || arrLength < LARGE_ARRAY_SIZE ||
+	          (arrLength == length && takeCount == length)) {
 	        return baseWrapperValue(array, this.__actions__);
 	      }
 	      var result = [];
@@ -2567,7 +2569,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	     */
 	    function hashHas(key) {
 	      var data = this.__data__;
-	      return nativeCreate ? (data[key] !== undefined) : hasOwnProperty.call(data, key);
+	      return nativeCreate ? data[key] !== undefined : hasOwnProperty.call(data, key);
 	    }
 	
 	    /**
@@ -3038,6 +3040,24 @@ return /******/ (function(modules) { // webpackBootstrap
 	     */
 	    function arrayShuffle(array) {
 	      return shuffleSelf(copyArray(array));
+	    }
+	
+	    /**
+	     * Used by `_.defaults` to customize its `_.assignIn` use.
+	     *
+	     * @private
+	     * @param {*} objValue The destination value.
+	     * @param {*} srcValue The source value.
+	     * @param {string} key The key of the property to assign.
+	     * @param {Object} object The parent object of `objValue`.
+	     * @returns {*} Returns the value to assign.
+	     */
+	    function assignInDefaults(objValue, srcValue, key, object) {
+	      if (objValue === undefined ||
+	          (eq(objValue, objectProto[key]) && !hasOwnProperty.call(object, key))) {
+	        return srcValue;
+	      }
+	      return objValue;
 	    }
 	
 	    /**
@@ -3652,7 +3672,8 @@ return /******/ (function(modules) { // webpackBootstrap
 	      if (value == null) {
 	        return value === undefined ? undefinedTag : nullTag;
 	      }
-	      return (symToStringTag && symToStringTag in Object(value))
+	      value = Object(value);
+	      return (symToStringTag && symToStringTag in value)
 	        ? getRawTag(value)
 	        : objectToString(value);
 	    }
@@ -3856,7 +3877,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	      if (value === other) {
 	        return true;
 	      }
-	      if (value == null || other == null || (!isObjectLike(value) && !isObjectLike(other))) {
+	      if (value == null || other == null || (!isObject(value) && !isObjectLike(other))) {
 	        return value !== value && other !== other;
 	      }
 	      return baseIsEqualDeep(value, other, bitmask, customizer, baseIsEqual, stack);
@@ -3879,12 +3900,17 @@ return /******/ (function(modules) { // webpackBootstrap
 	    function baseIsEqualDeep(object, other, bitmask, customizer, equalFunc, stack) {
 	      var objIsArr = isArray(object),
 	          othIsArr = isArray(other),
-	          objTag = objIsArr ? arrayTag : getTag(object),
-	          othTag = othIsArr ? arrayTag : getTag(other);
+	          objTag = arrayTag,
+	          othTag = arrayTag;
 	
-	      objTag = objTag == argsTag ? objectTag : objTag;
-	      othTag = othTag == argsTag ? objectTag : othTag;
-	
+	      if (!objIsArr) {
+	        objTag = getTag(object);
+	        objTag = objTag == argsTag ? objectTag : objTag;
+	      }
+	      if (!othIsArr) {
+	        othTag = getTag(other);
+	        othTag = othTag == argsTag ? objectTag : othTag;
+	      }
 	      var objIsObj = objTag == objectTag,
 	          othIsObj = othTag == objectTag,
 	          isSameTag = objTag == othTag;
@@ -4332,6 +4358,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	     * @returns {Object} Returns the new object.
 	     */
 	    function basePick(object, paths) {
+	      object = Object(object);
 	      return basePickBy(object, paths, function(value, path) {
 	        return hasIn(object, path);
 	      });
@@ -5724,7 +5751,8 @@ return /******/ (function(modules) { // webpackBootstrap
 	          var args = arguments,
 	              value = args[0];
 	
-	          if (wrapper && args.length == 1 && isArray(value)) {
+	          if (wrapper && args.length == 1 &&
+	              isArray(value) && value.length >= LARGE_ARRAY_SIZE) {
 	            return wrapper.plant(value).value();
 	          }
 	          var index = 0,
@@ -6031,7 +6059,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	      var func = Math[methodName];
 	      return function(number, precision) {
 	        number = toNumber(number);
-	        precision = precision == null ? 0 : nativeMin(toInteger(precision), 292);
+	        precision = nativeMin(toInteger(precision), 292);
 	        if (precision) {
 	          // Shift with exponential notation to avoid floating-point issues.
 	          // See [MDN](https://mdn.io/round#Examples) for more details.
@@ -6136,7 +6164,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	      thisArg = newData[2];
 	      partials = newData[3];
 	      holders = newData[4];
-	      arity = newData[9] = newData[9] === undefined
+	      arity = newData[9] = newData[9] == null
 	        ? (isBindKey ? 0 : func.length)
 	        : nativeMax(newData[9] - length, 0);
 	
@@ -6154,63 +6182,6 @@ return /******/ (function(modules) { // webpackBootstrap
 	      }
 	      var setter = data ? baseSetData : setData;
 	      return setWrapToString(setter(result, newData), func, bitmask);
-	    }
-	
-	    /**
-	     * Used by `_.defaults` to customize its `_.assignIn` use to assign properties
-	     * of source objects to the destination object for all destination properties
-	     * that resolve to `undefined`.
-	     *
-	     * @private
-	     * @param {*} objValue The destination value.
-	     * @param {*} srcValue The source value.
-	     * @param {string} key The key of the property to assign.
-	     * @param {Object} object The parent object of `objValue`.
-	     * @returns {*} Returns the value to assign.
-	     */
-	    function customDefaultsAssignIn(objValue, srcValue, key, object) {
-	      if (objValue === undefined ||
-	          (eq(objValue, objectProto[key]) && !hasOwnProperty.call(object, key))) {
-	        return srcValue;
-	      }
-	      return objValue;
-	    }
-	
-	    /**
-	     * Used by `_.defaultsDeep` to customize its `_.merge` use to merge source
-	     * objects into destination objects that are passed thru.
-	     *
-	     * @private
-	     * @param {*} objValue The destination value.
-	     * @param {*} srcValue The source value.
-	     * @param {string} key The key of the property to merge.
-	     * @param {Object} object The parent object of `objValue`.
-	     * @param {Object} source The parent object of `srcValue`.
-	     * @param {Object} [stack] Tracks traversed source values and their merged
-	     *  counterparts.
-	     * @returns {*} Returns the value to assign.
-	     */
-	    function customDefaultsMerge(objValue, srcValue, key, object, source, stack) {
-	      if (isObject(objValue) && isObject(srcValue)) {
-	        // Recursively merge objects and arrays (susceptible to call stack limits).
-	        stack.set(srcValue, objValue);
-	        baseMerge(objValue, srcValue, undefined, customDefaultsMerge, stack);
-	        stack['delete'](srcValue);
-	      }
-	      return objValue;
-	    }
-	
-	    /**
-	     * Used by `_.omit` to customize its `_.cloneDeep` use to only clone plain
-	     * objects.
-	     *
-	     * @private
-	     * @param {*} value The value to inspect.
-	     * @param {string} key The key of the property to inspect.
-	     * @returns {*} Returns the uncloned value or `undefined` to defer cloning to `_.cloneDeep`.
-	     */
-	    function customOmitClone(value) {
-	      return isPlainObject(value) ? undefined : value;
 	    }
 	
 	    /**
@@ -6384,9 +6355,9 @@ return /******/ (function(modules) { // webpackBootstrap
 	     */
 	    function equalObjects(object, other, bitmask, customizer, equalFunc, stack) {
 	      var isPartial = bitmask & COMPARE_PARTIAL_FLAG,
-	          objProps = getAllKeys(object),
+	          objProps = keys(object),
 	          objLength = objProps.length,
-	          othProps = getAllKeys(other),
+	          othProps = keys(other),
 	          othLength = othProps.length;
 	
 	      if (objLength != othLength && !isPartial) {
@@ -6624,15 +6595,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	     * @param {Object} object The object to query.
 	     * @returns {Array} Returns the array of symbols.
 	     */
-	    var getSymbols = !nativeGetSymbols ? stubArray : function(object) {
-	      if (object == null) {
-	        return [];
-	      }
-	      object = Object(object);
-	      return arrayFilter(nativeGetSymbols(object), function(symbol) {
-	        return propertyIsEnumerable.call(object, symbol);
-	      });
-	    };
+	    var getSymbols = nativeGetSymbols ? overArg(nativeGetSymbols, Object) : stubArray;
 	
 	    /**
 	     * Creates an array of the own and inherited enumerable symbols of `object`.
@@ -7116,6 +7079,29 @@ return /******/ (function(modules) { // webpackBootstrap
 	      data[1] = newBitmask;
 	
 	      return data;
+	    }
+	
+	    /**
+	     * Used by `_.defaultsDeep` to customize its `_.merge` use.
+	     *
+	     * @private
+	     * @param {*} objValue The destination value.
+	     * @param {*} srcValue The source value.
+	     * @param {string} key The key of the property to merge.
+	     * @param {Object} object The parent object of `objValue`.
+	     * @param {Object} source The parent object of `srcValue`.
+	     * @param {Object} [stack] Tracks traversed source values and their merged
+	     *  counterparts.
+	     * @returns {*} Returns the value to assign.
+	     */
+	    function mergeDefaults(objValue, srcValue, key, object, source, stack) {
+	      if (isObject(objValue) && isObject(srcValue)) {
+	        // Recursively merge objects and arrays (susceptible to call stack limits).
+	        stack.set(srcValue, objValue);
+	        baseMerge(objValue, srcValue, undefined, mergeDefaults, stack);
+	        stack['delete'](srcValue);
+	      }
+	      return objValue;
 	    }
 	
 	    /**
@@ -8860,7 +8846,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	     *
 	     * var users = [
 	     *   { 'user': 'barney',  'active': false },
-	     *   { 'user': 'fred',    'active': false },
+	     *   { 'user': 'fred',    'active': false},
 	     *   { 'user': 'pebbles', 'active': true }
 	     * ];
 	     *
@@ -11429,7 +11415,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	      if (typeof func != 'function') {
 	        throw new TypeError(FUNC_ERROR_TEXT);
 	      }
-	      start = start == null ? 0 : nativeMax(toInteger(start), 0);
+	      start = start === undefined ? 0 : nativeMax(toInteger(start), 0);
 	      return baseRest(function(args) {
 	        var array = args[start],
 	            otherArgs = castSlice(args, 0, start);
@@ -12099,7 +12085,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	     * date objects, error objects, maps, numbers, `Object` objects, regexes,
 	     * sets, strings, symbols, and typed arrays. `Object` objects are compared
 	     * by their own, not inherited, enumerable properties. Functions and DOM
-	     * nodes are compared by strict equality, i.e. `===`.
+	     * nodes are **not** supported.
 	     *
 	     * @static
 	     * @memberOf _
@@ -13119,9 +13105,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	     * // => 3
 	     */
 	    function toSafeInteger(value) {
-	      return value
-	        ? baseClamp(toInteger(value), -MAX_SAFE_INTEGER, MAX_SAFE_INTEGER)
-	        : (value === 0 ? value : 0);
+	      return baseClamp(toInteger(value), -MAX_SAFE_INTEGER, MAX_SAFE_INTEGER);
 	    }
 	
 	    /**
@@ -13375,7 +13359,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	     * // => { 'a': 1, 'b': 2 }
 	     */
 	    var defaults = baseRest(function(args) {
-	      args.push(undefined, customDefaultsAssignIn);
+	      args.push(undefined, assignInDefaults);
 	      return apply(assignInWith, undefined, args);
 	    });
 	
@@ -13399,7 +13383,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	     * // => { 'a': { 'b': 2, 'c': 3 } }
 	     */
 	    var defaultsDeep = baseRest(function(args) {
-	      args.push(undefined, customDefaultsMerge);
+	      args.push(undefined, mergeDefaults);
 	      return apply(mergeWith, undefined, args);
 	    });
 	
@@ -14061,7 +14045,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	      });
 	      copyObject(object, getAllKeysIn(object), result);
 	      if (isDeep) {
-	        result = baseClone(result, CLONE_DEEP_FLAG | CLONE_FLAT_FLAG | CLONE_SYMBOLS_FLAG, customOmitClone);
+	        result = baseClone(result, CLONE_DEEP_FLAG | CLONE_FLAT_FLAG | CLONE_SYMBOLS_FLAG);
 	      }
 	      var length = paths.length;
 	      while (length--) {
@@ -15210,10 +15194,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	     */
 	    function startsWith(string, target, position) {
 	      string = toString(string);
-	      position = position == null
-	        ? 0
-	        : baseClamp(toInteger(position), 0, string.length);
-	
+	      position = baseClamp(toInteger(position), 0, string.length);
 	      target = baseToString(target);
 	      return string.slice(position, position + target.length) == target;
 	    }
@@ -15332,9 +15313,9 @@ return /******/ (function(modules) { // webpackBootstrap
 	        options = undefined;
 	      }
 	      string = toString(string);
-	      options = assignInWith({}, options, settings, customDefaultsAssignIn);
+	      options = assignInWith({}, options, settings, assignInDefaults);
 	
-	      var imports = assignInWith({}, options.imports, settings.imports, customDefaultsAssignIn),
+	      var imports = assignInWith({}, options.imports, settings.imports, assignInDefaults),
 	          importsKeys = keys(imports),
 	          importsValues = baseValues(imports, importsKeys);
 	
@@ -17418,13 +17399,14 @@ return /******/ (function(modules) { // webpackBootstrap
 	    // Add `LazyWrapper` methods for `_.drop` and `_.take` variants.
 	    arrayEach(['drop', 'take'], function(methodName, index) {
 	      LazyWrapper.prototype[methodName] = function(n) {
+	        var filtered = this.__filtered__;
+	        if (filtered && !index) {
+	          return new LazyWrapper(this);
+	        }
 	        n = n === undefined ? 1 : nativeMax(toInteger(n), 0);
 	
-	        var result = (this.__filtered__ && !index)
-	          ? new LazyWrapper(this)
-	          : this.clone();
-	
-	        if (result.__filtered__) {
+	        var result = this.clone();
+	        if (filtered) {
 	          result.__takeCount__ = nativeMin(n, result.__takeCount__);
 	        } else {
 	          result.__views__.push({
@@ -17662,9 +17644,9 @@ return /******/ (function(modules) { // webpackBootstrap
 	
 	/* WEBPACK VAR INJECTION */}.call(exports, (function() { return this; }()), __webpack_require__(4)(module)))
 
-/***/ }),
+/***/ },
 /* 4 */
-/***/ (function(module, exports) {
+/***/ function(module, exports) {
 
 	module.exports = function(module) {
 		if(!module.webpackPolyfill) {
@@ -17678,9 +17660,9 @@ return /******/ (function(modules) { // webpackBootstrap
 	}
 
 
-/***/ }),
+/***/ },
 /* 5 */
-/***/ (function(module, exports) {
+/***/ function(module, exports) {
 
 	var TOKEN_NAMES = {
 	    PROGRAM: 'program',
@@ -17737,19 +17719,19 @@ return /******/ (function(modules) { // webpackBootstrap
 	module.exports = TOKEN_NAMES;
 
 
-/***/ }),
+/***/ },
 /* 6 */
-/***/ (function(module, exports, __webpack_require__) {
+/***/ function(module, exports, __webpack_require__) {
 
 	var errors = __webpack_require__(7);
-	var Scope = __webpack_require__(8);
+	var Scope = __webpack_require__(10);
 	
 	function throwUndefinedSymbolError() {
-	    errors.throwParserError(this, 'No definido');
+	    throw new errors.ParserException(this, {code: 'not_defined'});
 	}
 	
 	function throwMissingOperatorError() {
-	    errors.throwParserError(this, 'No se encontró el operador');
+	    throw new errors.ParserException(this, {code: 'missing_operator'});
 	}
 	
 	var OriginalSymbol = function () {
@@ -17794,8 +17776,8 @@ return /******/ (function(modules) { // webpackBootstrap
 	    return left;
 	};
 	
-	Parser.prototype.error = function (token, message) {
-	    errors.throwParserError(token, message);
+	Parser.prototype.error = function (on, reason) {
+	    throw new errors.ParserException(on, reason);
 	};
 	
 	Parser.prototype.newScope = function () {
@@ -17815,7 +17797,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	        if (this.lastToken && this.lastToken.range && this.token.range) {
 	            this.token.range.start = this.lastToken.range.start;
 	        }
-	        errors.throwParserError(this.token, 'Se esperaba "' + id + '" pero se encontró "' + this.token.value + '"');
+	        this.error(this.token, {code: 'expected_but_found', detail: {expected: id, actual: this.token.value}});
 	    }
 	    if (!tokens.hasNext()) {
 	        var lastRange = this.token.range;
@@ -17835,7 +17817,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	    } else if (a === 'operator') {
 	        o = this.symbolTable[v];
 	        if (!o) {
-	            errors.throwParserError(t, 'Unknown operator.');
+	            this.error(t, {code: 'unknown_operator'});
 	        }
 	    } else if (a === 'number') {
 	        o = this.symbolTable['(literal)'];
@@ -17845,7 +17827,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	        o = this.symbolTable['(bleh)'];
 	        v = tokens.current;
 	    } else {
-	        errors.throwParserError(t, 'Unexpected token.');
+	        this.error(t, {code: 'unexpected_token'});
 	    }
 	
 	    var token = Object.create(o);
@@ -17876,7 +17858,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	    }
 	    v = this.expression(0);
 	    if (v.alias !== ':=' && v.id !== '(' && v.arity !== 'routine') {
-	        errors.throwParserError(v, 'Bad expression statement.');
+	        this.error(v, {code: 'bad_expression_statement'});
 	    }
 	    return v;
 	};
@@ -17911,7 +17893,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	Parser.prototype.rootDeclaration = function () {
 	    var n = this.token;
 	    if (!n.root) {
-	        errors.throwParserError(n, 'Se esperaba una definición de programa, función o procedimiento.');
+	        this.error(n, {code: 'no_root_declaration'});
 	    }
 	    this.advance();
 	    this.scope.reserve(n);
@@ -18030,36 +18012,114 @@ return /******/ (function(modules) { // webpackBootstrap
 	module.exports = Parser;
 
 
-/***/ }),
+/***/ },
 /* 7 */
-/***/ (function(module, exports) {
+/***/ function(module, exports, __webpack_require__) {
 
+	var locales = __webpack_require__(8);
+	
 	var errors = {};
 	
-	errors.throwParserError = function (token, description) {
-	    var someError = {error: description, on: token};
-	    throw someError;
+	errors.ParserException = function (on, reason) {
+	    this.message = locales.get(reason.code, reason.detail);
+	    this.on = on;
+	    this.reason = reason;
 	};
+	errors.ParserException.prototype = new Error();
 	
-	errors.InterpreterException = function (message, on, reason) {
-	    this.message = message;
+	errors.InterpreterException = function (on, reason) {
+	    this.message = locales.get(reason.code, reason.detail);
 	    this.on = on;
 	    this.reason = reason;
 	};
 	errors.InterpreterException.prototype = new Error();
 	
 	errors.throwTypeMismatch = function (token, expectedType, actualType) {
-	    throw new errors.InterpreterException('Se esperaba un valor de tipo "' + expectedType + '" pero se encontró uno de tipo "' + actualType + '".', token, {code: 'type_mismatch', detail: {expected: expectedType, actual: actualType}});
+	    throw new errors.InterpreterException(token, {code: 'type_mismatch', detail: {expected: expectedType, actual: actualType}});
 	};
 	
 	module.exports = errors;
 
 
-/***/ }),
+/***/ },
 /* 8 */
-/***/ (function(module, exports, __webpack_require__) {
+/***/ function(module, exports, __webpack_require__) {
 
 	var _ = __webpack_require__(3);
+	
+	var language = 'es';
+	
+	var translations = {
+	    es: __webpack_require__(9)
+	};
+	
+	module.exports = {
+	    setLanguage: function(val) {
+	        if (translations[val]) {
+	            language = val;
+	        } else {
+	            throw new Error(_.template('Language <%=name%> is not supported yet.')({ name: val }));
+	        }
+	    },
+	
+	    get: function(key, parameters) {
+	        return _.template(this.getLocales()[key])(parameters);
+	    },
+	
+	    getLocales: function() {
+	        return translations[language];
+	    }
+	};
+
+
+/***/ },
+/* 9 */
+/***/ function(module, exports) {
+
+	module.exports =
+	{
+	    // parser errors:
+	    bad_expression_statement: 'Expresión inválida.',
+	    existing_name: 'El nombre "<%=name%>" ya está definido.',
+	    expected_but_found: 'Se esperaba "<%=expected%>" pero se encontró "<%=actual%>".',
+	    expecting_error_message: 'Se esperaba un mensaje de error entre comillas.',
+	    expecting_final_quotes: 'Se esperaba un cierre de comillas.',
+	    expecting_function_name: 'Se esperaba un nombre de función',
+	    expecting_parameter_name: 'Se esperaba un nombre de parámetro.',
+	    expecting_procedure_name: 'Se esperaba un nombre de procedimiento',
+	    foreach_expects_an_identifier: 'El foreach espera un identificador sobre el cual iterar.',
+	    function_must_end_with_return: 'La función <%=name%> debe terminar con un return.',
+	    function_name_should_start_with_lowercase: 'El nombre de la función <%=name%> debe empezar con minúscula.',
+	    invalid_key: 'La rama número <%=n%> no contiene una tecla válida.',
+	    missing_operator: 'No se encontró el operador.',
+	    no_root_declaration: 'Se esperaba una definición de programa, función o procedimiento.',
+	    not_a_function_or_procedure: '<%=name%> no es una función o procedimiento.',
+	    not_defined: 'No definido.',
+	    only_identifiers_can_be_used_in_assignation: 'Del lado izquierdo de la asignación sólo pueden usarse identificadores.',
+	    place_init_at_the_start: 'La rama INIT debe ir al principio.',
+	    place_timeout_at_the_end: 'La rama TIMEOUT(n) debe ir al final.',
+	    procedure_name_should_start_with_uppercase: 'El nombre del procedimiento <%=name%> debe empezar con mayúscula.',
+	    reserved_name: 'El nombre "<%=name%>" no se puede usar porque es parte del lenguaje.',
+	    timeout_outside_bounds: 'El argumento de TIMEOUT(n) debe ser un número entre 1 y 60000.',
+	    unknown_operator: 'Operador desconocido.',
+	    unexpected_token: 'Token no esperado.',
+	
+	    // interpreter errors:
+	    inconsistent_assignment: 'No se puede asignar a "<%=name%>" un valor de tipo "<%=actual%>" ya que es de tipo "<%=expected%>".',
+	    non_numeric_exit_code: 'El programa retornó un valor no numérico.',
+	    type_mismatch: 'Se esperaba un valor de tipo "<%=expected%>" pero se encontró uno de tipo "<%=actual%>".',
+	    undefined_procedure: 'El procedimiento "<%=name%>" no se encuentra definido.',
+	    undefined_function: 'La función "<%=name%>" no se encuentra definida.',
+	    undefined_literal: 'El literal "<%=name%>" no existe.',
+	    undefined_name: 'El nombre "<%=name%>" no existe.',
+	    wrong_arity: 'Se esperaban <%=expected%> argumentos pero se obtuvieron <%=actual%>.'
+	};
+
+
+/***/ },
+/* 10 */
+/***/ function(module, exports, __webpack_require__) {
+
 	var errors = __webpack_require__(7);
 	
 	function itself() {
@@ -18075,7 +18135,8 @@ return /******/ (function(modules) { // webpackBootstrap
 	    var t = this.find(identifier.value);
 	
 	    if (typeof t === 'object' && t.arity === 'name') {
-	        errors.throwParserError(identifier, _.template(t.reserved ? 'El nombre "<%=value%>" no se puede usar porque es parte del lenguaje' : 'El nombre "<%=value%>" ya está definido')(identifier));
+	        var errorCode = t.reserved ? 'reserved_name' : 'existing_name';
+	        throw new errors.ParserException(identifier, {code: errorCode, detail: {name: identifier.value}});
 	    }
 	
 	    this.def[identifier.value] = identifier;
@@ -18128,9 +18189,9 @@ return /******/ (function(modules) { // webpackBootstrap
 	module.exports = Scope;
 
 
-/***/ }),
-/* 9 */
-/***/ (function(module, exports) {
+/***/ },
+/* 11 */
+/***/ function(module, exports) {
 
 	function Lexer(prefix, suffix) {
 	    // Current reading position
@@ -18371,9 +18432,9 @@ return /******/ (function(modules) { // webpackBootstrap
 	module.exports = Lexer;
 
 
-/***/ }),
-/* 10 */
-/***/ (function(module, exports, __webpack_require__) {
+/***/ },
+/* 12 */
+/***/ function(module, exports, __webpack_require__) {
 
 	var node = {};
 	node.errors = __webpack_require__(7);
@@ -18393,28 +18454,28 @@ return /******/ (function(modules) { // webpackBootstrap
 	    return context;
 	};
 	
-	__webpack_require__(11)(node, constants);
-	__webpack_require__(12)(node, constants);
 	__webpack_require__(13)(node, constants);
 	__webpack_require__(14)(node, constants);
 	__webpack_require__(15)(node, constants);
+	__webpack_require__(16)(node, constants);
 	__webpack_require__(17)(node, constants);
-	__webpack_require__(18)(node, constants);
 	__webpack_require__(19)(node, constants);
+	__webpack_require__(20)(node, constants);
 	__webpack_require__(21)(node, constants);
-	__webpack_require__(22)(node, constants);
 	__webpack_require__(23)(node, constants);
 	__webpack_require__(24)(node, constants);
 	__webpack_require__(25)(node, constants);
 	__webpack_require__(26)(node, constants);
 	__webpack_require__(27)(node, constants);
+	__webpack_require__(28)(node, constants);
+	__webpack_require__(29)(node, constants);
 	
 	module.exports = node;
 
 
-/***/ }),
-/* 11 */
-/***/ (function(module, exports, __webpack_require__) {
+/***/ },
+/* 13 */
+/***/ function(module, exports, __webpack_require__) {
 
 	var TOKEN_NAMES = __webpack_require__(5);
 	
@@ -18436,9 +18497,9 @@ return /******/ (function(modules) { // webpackBootstrap
 	};
 
 
-/***/ }),
-/* 12 */
-/***/ (function(module, exports) {
+/***/ },
+/* 14 */
+/***/ function(module, exports) {
 
 	module.exports = function (node) {
 	    node.Constant = function (token, alias, value, type) {
@@ -18459,9 +18520,9 @@ return /******/ (function(modules) { // webpackBootstrap
 	;
 
 
-/***/ }),
-/* 13 */
-/***/ (function(module, exports) {
+/***/ },
+/* 15 */
+/***/ function(module, exports) {
 
 	module.exports = function (node) {
 	    node.Variable = function (token, id) {
@@ -18482,9 +18543,9 @@ return /******/ (function(modules) { // webpackBootstrap
 	};
 
 
-/***/ }),
-/* 14 */
-/***/ (function(module, exports) {
+/***/ },
+/* 16 */
+/***/ function(module, exports) {
 
 	module.exports = function (node, constants) {
 	    node.Assignment = function (token, left, right) {
@@ -18501,11 +18562,11 @@ return /******/ (function(modules) { // webpackBootstrap
 	};
 
 
-/***/ }),
-/* 15 */
-/***/ (function(module, exports, __webpack_require__) {
+/***/ },
+/* 17 */
+/***/ function(module, exports, __webpack_require__) {
 
-	var wrap = __webpack_require__(16);
+	var wrap = __webpack_require__(18);
 	
 	module.exports = function (node) {
 	    node.If = function (token, condition, trueBranch, falseBranch) {
@@ -18553,9 +18614,9 @@ return /******/ (function(modules) { // webpackBootstrap
 	};
 
 
-/***/ }),
-/* 16 */
-/***/ (function(module, exports, __webpack_require__) {
+/***/ },
+/* 18 */
+/***/ function(module, exports, __webpack_require__) {
 
 	var _ = __webpack_require__(3);
 	var TOKEN_NAMES = __webpack_require__(5);
@@ -18573,9 +18634,9 @@ return /******/ (function(modules) { // webpackBootstrap
 	};
 
 
-/***/ }),
-/* 17 */
-/***/ (function(module, exports) {
+/***/ },
+/* 19 */
+/***/ function(module, exports) {
 
 	module.exports = function (node, constants) {
 	    var BinaryOperation = function (token, left, right, alias) {
@@ -18666,9 +18727,9 @@ return /******/ (function(modules) { // webpackBootstrap
 	;
 
 
-/***/ }),
-/* 18 */
-/***/ (function(module, exports) {
+/***/ },
+/* 20 */
+/***/ function(module, exports) {
 
 	module.exports = function (node) {
 	    node.NotOperation = function (token, expression) {
@@ -18694,12 +18755,12 @@ return /******/ (function(modules) { // webpackBootstrap
 	;
 
 
-/***/ }),
-/* 19 */
-/***/ (function(module, exports, __webpack_require__) {
+/***/ },
+/* 21 */
+/***/ function(module, exports, __webpack_require__) {
 
 	var TOKEN_NAMES = __webpack_require__(5);
-	var getValue = __webpack_require__(20);
+	var getValue = __webpack_require__(22);
 	
 	module.exports = function (node, constants) {
 	    node.Opposite = function (token, parameters) {
@@ -18820,9 +18881,9 @@ return /******/ (function(modules) { // webpackBootstrap
 	};
 
 
-/***/ }),
-/* 20 */
-/***/ (function(module, exports) {
+/***/ },
+/* 22 */
+/***/ function(module, exports) {
 
 	module.exports = function (node, token, parameters, context, expectedType, options) {
 	    var parameter = parameters[0];
@@ -18836,23 +18897,23 @@ return /******/ (function(modules) { // webpackBootstrap
 	
 	    if (value === undefined) {
 	        var name = parameter.token.value;
-	        var subject = (name[0] && name[0] === name[0].toUpperCase()) ?
-	            {name: 'El literal', code: 'undefined_literal'} :
-	            {name: 'El nombre', code: 'undefined_variable'};
+	        var errorCode = (name[0] && name[0] === name[0].toUpperCase()) ?
+	            'undefined_literal' :
+	            'undefined_name';
 	
-	        throw new node.errors.InterpreterException(subject.name + ' "' + parameter.token.value + '" no existe.', parameter.token, {code: subject.code, detail: parameter.token.value});
+	        throw new node.errors.InterpreterException(parameter.token, {code: errorCode, detail: {name: parameter.token.value}});
 	    }
 	
 	    return parameter.eval(context, options);
 	};
 
 
-/***/ }),
-/* 21 */
-/***/ (function(module, exports, __webpack_require__) {
+/***/ },
+/* 23 */
+/***/ function(module, exports, __webpack_require__) {
 
 	var TOKEN_NAMES = __webpack_require__(5);
-	var getValue = __webpack_require__(20);
+	var getValue = __webpack_require__(22);
 	
 	module.exports = function (node, constants) {
 	    var snapshot = function (node, context) {
@@ -18954,11 +19015,11 @@ return /******/ (function(modules) { // webpackBootstrap
 	};
 
 
-/***/ }),
-/* 22 */
-/***/ (function(module, exports, __webpack_require__) {
+/***/ },
+/* 24 */
+/***/ function(module, exports, __webpack_require__) {
 
-	var getValue = __webpack_require__(20);
+	var getValue = __webpack_require__(22);
 	
 	module.exports = function (node) {
 	    function evalArguments(token, context, parameters, options) {
@@ -18976,7 +19037,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	        // TODO: no se pueden reasignar valores a los parámetros
 	        if (declaration.parameters) {
 	            if (declaration.parameters.length !== parameters.length) {
-	                throw new node.errors.InterpreterException('Se esperaban ' + declaration.parameters.length + ' argumentos pero se obtuvieron ' + parameters.length + '.', token, {code: 'wrong_arity', detail: {expected: declaration.parameters.length, actual: parameters.length}});
+	                throw new node.errors.InterpreterException(token, {code: 'wrong_arity', detail: {expected: declaration.parameters.length, actual: parameters.length}});
 	            }
 	            for (var i = 0; i < declaration.parameters.length; i++) {
 	                context.put(declaration.parameters[i].value, parameters[i], node, token);
@@ -18998,7 +19059,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	    node.ProcedureCall.prototype.interpret = function (context) {
 	        var target = this.declarationProvider();
 	        if (!target.declaration) {
-	            throw new node.errors.InterpreterException('El procedimiento ' + this.name + ' no se encuentra definido.', this, {code: 'undefined_procedure', detail: this.name});
+	            throw new node.errors.InterpreterException(this, {code: 'undefined_procedure', detail: {name: this.name}});
 	        }
 	        var declaration = target.declaration;
 	        var parameterValues = evalArguments(this.token, context, this.parameters, {});
@@ -19021,7 +19082,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	    node.FunctionCall.prototype.eval = function (context, options) {
 	        var target = this.declarationProvider();
 	        if (!target.declaration) {
-	            throw new node.errors.InterpreterException('La función "' + this.name + '" no se encuentra definida.', this.token, {code: 'undefined_function', detail: this.name});
+	            throw new node.errors.InterpreterException(this.token, {code: 'undefined_function', detail: {name: this.name}});
 	        }
 	        var declaration = target.declaration;
 	        var parameterValues = evalArguments(this.token, context, this.parameters, {});
@@ -19038,9 +19099,9 @@ return /******/ (function(modules) { // webpackBootstrap
 	;
 
 
-/***/ }),
-/* 23 */
-/***/ (function(module, exports) {
+/***/ },
+/* 25 */
+/***/ function(module, exports) {
 
 	module.exports = function (node) {
 	    node.ProcedureDeclaration = function (token, parameters, body) {
@@ -19075,9 +19136,9 @@ return /******/ (function(modules) { // webpackBootstrap
 	};
 
 
-/***/ }),
-/* 24 */
-/***/ (function(module, exports) {
+/***/ },
+/* 26 */
+/***/ function(module, exports) {
 
 	module.exports = function (node) {
 	    node.While = function (token, expression, body) {
@@ -19128,9 +19189,9 @@ return /******/ (function(modules) { // webpackBootstrap
 	};
 
 
-/***/ }),
-/* 25 */
-/***/ (function(module, exports) {
+/***/ },
+/* 27 */
+/***/ function(module, exports) {
 
 	module.exports = function (node) {
 	    node.Root = function (program, declarations) {
@@ -19145,9 +19206,9 @@ return /******/ (function(modules) { // webpackBootstrap
 	};
 
 
-/***/ }),
-/* 26 */
-/***/ (function(module, exports, __webpack_require__) {
+/***/ },
+/* 28 */
+/***/ function(module, exports, __webpack_require__) {
 
 	var _ = __webpack_require__(3);
 	
@@ -19178,16 +19239,16 @@ return /******/ (function(modules) { // webpackBootstrap
 	        if (this.returnSentence) {
 	            context.exitStatus = this.returnSentence.expression.eval(context);
 	            if (!_.isNumber(context.exitStatus)) {
-	                throw new node.errors.InterpreterException('El programa retornó un valor no numérico.', this.returnSentence.token, {code: 'non_numeric_exit_code', detail: context.exitStatus});
+	                throw new node.errors.InterpreterException(this.returnSentence.token, {code: 'non_numeric_exit_code', detail: {value: context.exitStatus}});
 	            }
 	        }
 	    };
 	};
 
 
-/***/ }),
-/* 27 */
-/***/ (function(module, exports, __webpack_require__) {
+/***/ },
+/* 29 */
+/***/ function(module, exports, __webpack_require__) {
 
 	var _ = __webpack_require__(3);
 	
@@ -19244,13 +19305,13 @@ return /******/ (function(modules) { // webpackBootstrap
 	};
 
 
-/***/ }),
-/* 28 */
-/***/ (function(module, exports, __webpack_require__) {
+/***/ },
+/* 30 */
+/***/ function(module, exports, __webpack_require__) {
 
 	var _ = __webpack_require__(3);
-	var wrap = __webpack_require__(16);
-	var Board = __webpack_require__(29);
+	var wrap = __webpack_require__(18);
+	var Board = __webpack_require__(31);
 	
 	var randomId = function () {
 	    return Math.floor((1 + Math.random()) * 0x10000);
@@ -19279,7 +19340,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	        var existingVariable = this.getNode(key);
 	        var type = wrap(value).type;
 	        if (existingVariable !== undefined && existingVariable.type !== undefined && type !== undefined && existingVariable.type !== type) {
-	            throw new node.errors.InterpreterException('No se puede asignar a "' + key + '" un valor de tipo "' + type + '" ya que es de tipo "' + existingVariable.type + '".', token, {code: 'inconsistent_assignment', detail: {expected: existingVariable.type, actual: type}});
+	            throw new node.errors.InterpreterException(token, {code: 'inconsistent_assignment', detail: {name: key, expected: existingVariable.type, actual: type}});
 	        }
 	        currentVariables[key] = value;
 	    };
@@ -19326,11 +19387,11 @@ return /******/ (function(modules) { // webpackBootstrap
 	module.exports = Context;
 
 
-/***/ }),
-/* 29 */
-/***/ (function(module, exports, __webpack_require__) {
+/***/ },
+/* 31 */
+/***/ function(module, exports, __webpack_require__) {
 
-	var viewAdapter = __webpack_require__(30);
+	var viewAdapter = __webpack_require__(32);
 	
 	var GobstonesError = function (message, reason) {
 	    this.message = message;
@@ -19494,9 +19555,9 @@ return /******/ (function(modules) { // webpackBootstrap
 	module.exports = Board;
 
 
-/***/ }),
-/* 30 */
-/***/ (function(module, exports, __webpack_require__) {
+/***/ },
+/* 32 */
+/***/ function(module, exports, __webpack_require__) {
 
 	var _ = __webpack_require__(3);
 	
@@ -19551,12 +19612,12 @@ return /******/ (function(modules) { // webpackBootstrap
 	module.exports = viewAdapter;
 
 
-/***/ }),
-/* 31 */
-/***/ (function(module, exports, __webpack_require__) {
+/***/ },
+/* 33 */
+/***/ function(module, exports, __webpack_require__) {
 
-	var Board = __webpack_require__(29);
-	var stringUtils = __webpack_require__(32);
+	var Board = __webpack_require__(31);
+	var stringUtils = __webpack_require__(34);
 	
 	var gbbReader = {
 	};
@@ -19657,9 +19718,9 @@ return /******/ (function(modules) { // webpackBootstrap
 	module.exports = gbbReader;
 
 
-/***/ }),
-/* 32 */
-/***/ (function(module, exports) {
+/***/ },
+/* 34 */
+/***/ function(module, exports) {
 
 	module.exports = {
 	    splitByLines: function (string) {
@@ -19683,9 +19744,9 @@ return /******/ (function(modules) { // webpackBootstrap
 	};
 
 
-/***/ }),
-/* 33 */
-/***/ (function(module, exports) {
+/***/ },
+/* 35 */
+/***/ function(module, exports) {
 
 	var gbbWriter = {
 	};
@@ -19730,7 +19791,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	module.exports = gbbWriter;
 
 
-/***/ })
+/***/ }
 /******/ ])
 });
 ;
