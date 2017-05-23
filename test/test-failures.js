@@ -7,6 +7,8 @@ var messageIncludeAllDetail = function (t, error) {
     }), true);
 };
 
+// INTERPRETER ERRORS:
+
 utils.testProgramFailure('boom.gbs', function (t, error) {
     messageIncludeAllDetail(t, error);
     t.deepEqual(error.reason, {code: 'undefined_procedure', detail: {name: 'Boomba'}});
@@ -117,6 +119,8 @@ utils.testProgramFailure('unknown-literal-in-any-procedure.gbs', function (t, er
 
 // ---
 
+// BOOM:
+
 utils.testProgramFailure('user-boom/good-boom.gbs', function (t, error) {
     t.is(error.message, 'Ahora sí se rompe todo');
     t.is(error.reason.code, 'boom_called');
@@ -124,39 +128,49 @@ utils.testProgramFailure('user-boom/good-boom.gbs', function (t, error) {
 
 // ---
 
+// PARSER ERRORS:
+
 utils.testProgramFailure('user-boom/without-parameters.gbs', function (t, error) {
-    t.is(error.error, 'Se esperaba un mensaje de error entre comillas');
+    t.is(error.message, 'Se esperaba un mensaje de error entre comillas.');
+    t.deepEqual(error.on.range.start, {row: 1, column: 10});
 });
 
 utils.testProgramFailure('user-boom/with-color-as-parameter.gbs', function (t, error) {
-    t.is(error.error, 'Se esperaba un mensaje de error entre comillas');
+    t.is(error.message, 'Se esperaba un mensaje de error entre comillas.');
+    t.deepEqual(error.on.range.start, {row: 1, column: 10});
 });
 
 utils.testProgramFailure('user-boom/with-no-closing-quote.gbs', function (t, error) {
-    t.is(error.error, 'Se esperaba un cierre de comillas');
+    t.is(error.message, 'Se esperaba un cierre de comillas.');
+    t.deepEqual(error.on.range.start, {row: 1, column: 11});
 });
 
-utils.testProgramFailure('interactive/wrong-keys.gbs', function (t, reason) {
-    t.is(reason.error, 'La rama número 2 no contiene una tecla válida');
+utils.testProgramFailure('interactive/wrong-keys.gbs', function (t, error) {
+    t.is(error.message, 'La rama número 2 no contiene una tecla válida.');
+    t.deepEqual(error.on.range.start, {row: 2, column: 5});
 });
 
-utils.testProgramFailure('interactive/wrong-init-placement.gbs', function (t, reason) {
-    t.is(reason.error, 'La rama INIT debe ir al principio');
+utils.testProgramFailure('interactive/wrong-init-placement.gbs', function (t, error) {
+    t.is(error.message, 'La rama INIT debe ir al principio.');
+    t.deepEqual(error.on.range.start, {row: 2, column: 5});
 });
 
-utils.testProgramFailure('interactive/wrong-timeout-placement.gbs', function (t, reason) {
-    t.is(reason.error, 'La rama TIMEOUT(n) debe ir al final');
+utils.testProgramFailure('interactive/wrong-timeout-placement.gbs', function (t, error) {
+    t.is(error.message, 'La rama TIMEOUT(n) debe ir al final.');
+    t.deepEqual(error.on.range.start, {row: 2, column: 5});
 });
 
-utils.testProgramFailure('interactive/zero-timeout.gbs', function (t, reason) {
-    t.is(reason.error, 'El argumento de TIMEOUT(n) debe ser un número entre 1 y 60000');
+utils.testProgramFailure('interactive/zero-timeout.gbs', function (t, error) {
+    t.is(error.message, 'El argumento de TIMEOUT(n) debe ser un número entre 1 y 60000.');
+    t.deepEqual(error.on.range.start, {row: 1, column: 13});
 });
 
-utils.testProgramFailure('interactive/big-timeout.gbs', function (t, reason) {
-    t.is(reason.error, 'El argumento de TIMEOUT(n) debe ser un número entre 1 y 60000');
+utils.testProgramFailure('interactive/big-timeout.gbs', function (t, error) {
+    t.is(error.message, 'El argumento de TIMEOUT(n) debe ser un número entre 1 y 60000.');
+    t.deepEqual(error.on.range.start, {row: 1, column: 13});
 });
 
-utils.testProgramFailure('already-defined.gbs', function (t, reason) {
-    t.is(reason.error, 'El nombre "Hola" ya está definido');
-    t.deepEqual(reason.on.range.start, {row: 7, column: 11});
+utils.testProgramFailure('already-defined.gbs', function (t, error) {
+    t.is(error.message, 'El nombre "Hola" ya está definido.');
+    t.deepEqual(error.on.range.start, {row: 7, column: 11});
 });
