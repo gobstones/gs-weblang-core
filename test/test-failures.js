@@ -197,9 +197,16 @@ utils.testProgramFailure('interactive/big-timeout.gbs', function (t, error) {
     );
 });
 
-utils.testProgramFailure('already-defined.gbs', function (t, error) {
+utils.testProgramFailure('already-defined-procedure.gbs', function (t, error) {
     utils.checkError(t, error,
-        {code: 'existing_name', detail: {name: 'Hola'}},
+        {code: 'existing_procedure', detail: {name: 'Hola'}},
         {row: 7, column: 11}
+    );
+});
+
+utils.testProgramFailure('already-defined-function.gbs', function (t, error) {
+    utils.checkError(t, error,
+        {code: 'existing_function', detail: {name: 'hola'}},
+        {row: 7, column: 10}
     );
 });
