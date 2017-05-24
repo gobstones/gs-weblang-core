@@ -1,8 +1,0 @@
-procedure HacerCosas(arg1, arg2) {
-    Poner(arg1)
-    Mover(arg2)
-}
-
-program {
-    HacerCosas(Rojo)
-}

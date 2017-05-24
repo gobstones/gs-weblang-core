@@ -79,18 +79,38 @@ utils.testProgramFailure('wrong-types/inconsistent-assignment-2.gbs', function (
     );
 });
 
-utils.testProgramFailure('wrong-types/wrong-arity.gbs', function (t, error) {
-    utils.checkError(t, error,
-        {code: 'wrong_arity', detail: {expected: 2, actual: 1}},
-        {row: 6, column: 5}
-    );
-});
-
 utils.testProgramFailure('wrong-types/inconsistent-switch-branch-types.gbs', function (t, error) {
     utils.checkError(t, error,
         {code: 'type_mismatch', detail: {expected: 'Color', actual: 'Número'}},
         {row: 2, column: 9}
     );
+});
+
+utils.testProgramFailure('wrong-arity-1.gbs', function (t, error) {
+    utils.checkError(t, error,
+        {code: 'wrong_arity', detail: {nameType: 'procedure', name: 'Algo', expected: 1, actual: 2}},
+        {row: 4, column: 5},
+        false
+    );
+    t.is(error.message, 'El procedimiento Algo esperaba 1 argumento y se encontraron 2.');
+});
+
+utils.testProgramFailure('wrong-arity-2.gbs', function (t, error) {
+    utils.checkError(t, error,
+        {code: 'wrong_arity', detail: {nameType: 'procedure', name: 'Algo', expected: 2, actual: 1}},
+        {row: 4, column: 5},
+        false
+    );
+    t.is(error.message, 'El procedimiento Algo esperaba 2 argumentos y se encontró 1.');
+});
+
+utils.testProgramFailure('wrong-arity-3.gbs', function (t, error) {
+    utils.checkError(t, error,
+        {code: 'wrong_arity', detail: {nameType: 'function', name: 'algo', expected: 2, actual: 1}},
+        {row: 5, column: 10},
+        false
+    );
+    t.is(error.message, 'La función algo esperaba 2 argumentos y se encontró 1.');
 });
 
 var testUnexpectedConstant = function (fileName) {
