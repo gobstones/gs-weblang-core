@@ -238,3 +238,10 @@ utils.testProgramFailure('invalid-variable-name.gbs', function (t, error) {
         {row: 1, column: 5}
     );
 });
+
+utils.testProgramFailure('unexpected-token.gbs', function (t, error) {
+    utils.checkError(t, error,
+        {code: 'unexpected_token', detail: {token: '%'}},
+        {row: 1, column: 12}
+    );
+});
