@@ -224,3 +224,17 @@ utils.testProgramFailure('invalid-parameter-name.gbs', function (t, error) {
         {row: 4, column: 19}
     );
 });
+
+utils.testProgramFailure('invalid-index-name.gbs', function (t, error) {
+    utils.checkError(t, error,
+        {code: 'invalid_index_name', detail: {value: 9}},
+        {row: 1, column: 13}
+    );
+});
+
+utils.testProgramFailure('invalid-variable-name.gbs', function (t, error) {
+    utils.checkError(t, error,
+        {code: 'invalid_variable_name', detail: {value: 3}},
+        {row: 1, column: 5}
+    );
+});
