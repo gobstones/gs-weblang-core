@@ -164,7 +164,7 @@ utils.testProgramFailure('user-boom/with-no-closing-quote.gbs', function (t, err
 
 utils.testProgramFailure('interactive/wrong-keys.gbs', function (t, error) {
     utils.checkError(t, error,
-        {code: 'invalid_key', detail: {n: 2}},
+        {code: 'invalid_key', detail: {key: 'TECLA_CUALQUIERA'}},
         {row: 2, column: 5}
     );
 });
