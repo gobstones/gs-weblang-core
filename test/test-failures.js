@@ -23,14 +23,6 @@ utils.testProgramFailure('unknown-function.gbs', function (t, error) {
     );
 });
 
-utils.testProgramFailure('returning-non-numeric-exit-code.gbs', function (t, error) {
-    utils.checkError(t, error,
-        {code: 'non_numeric_exit_code', detail: {value: [0, 1]}},
-        {row: 3, column: 11},
-        false
-    );
-});
-
 utils.testProgramFailure('wrong-types/basic-move-red.gbs', function (t, error) {
     utils.checkError(t, error,
         {code: 'type_mismatch', detail: {expected: 'Dirección', actual: 'Color'}},
