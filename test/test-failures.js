@@ -232,23 +232,29 @@ utils.testProgramFailure('incomplete-parameter-list.gbs', function (t, error) {
 
 utils.testProgramFailure('invalid-parameter-name.gbs', function (t, error) {
     utils.checkError(t, error,
-        {code: 'invalid_parameter_name', detail: {value: 2}},
-        {row: 4, column: 19}
+        {code: 'invalid_name', detail: {nameType: 'parameter', value: 2}},
+        {row: 4, column: 19},
+        false
     );
+    t.is(error.message, '2 no es un nombre válido para un parámetro.');
 });
 
 utils.testProgramFailure('invalid-index-name.gbs', function (t, error) {
     utils.checkError(t, error,
-        {code: 'invalid_index_name', detail: {value: 9}},
-        {row: 1, column: 13}
+        {code: 'invalid_name', detail: {nameType: 'index', value: 9}},
+        {row: 1, column: 13},
+        false
     );
+    t.is(error.message, '9 no es un nombre válido para un índice.');
 });
 
 utils.testProgramFailure('invalid-variable-name.gbs', function (t, error) {
     utils.checkError(t, error,
-        {code: 'invalid_variable_name', detail: {value: 3}},
-        {row: 1, column: 5}
+        {code: 'invalid_name', detail: {nameType: 'variable', value: 3}},
+        {row: 1, column: 5},
+        false
     );
+    t.is(error.message, '3 no es un nombre válido para una variable.');
 });
 
 utils.testProgramFailure('unexpected-token.gbs', function (t, error) {
