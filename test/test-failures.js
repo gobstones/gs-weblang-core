@@ -25,42 +25,42 @@ utils.testProgramFailure('unknown-function.gbs', function (t, error) {
 
 utils.testProgramFailure('wrong-types/basic-move-red.gbs', function (t, error) {
     utils.checkError(t, error,
-        {code: 'type_mismatch', detail: {expected: 'Dirección', actual: 'Color'}},
+        {code: 'call_type_mismatch', detail: {name: 'Mover', expected: 'Dirección', actual: 'Color'}},
         {row: 1, column: 10}
     );
 });
 
 utils.testProgramFailure('wrong-types/move-red.gbs', function (t, error) {
     utils.checkError(t, error,
-        {code: 'type_mismatch', detail: {expected: 'Dirección', actual: 'Color'}},
+        {code: 'call_type_mismatch', detail: {name: 'Mover', expected: 'Dirección', actual: 'Color'}},
         {row: 5, column: 10}
     );
 });
 
 utils.testProgramFailure('wrong-types/move-red-by-parameter.gbs', function (t, error) {
     utils.checkError(t, error,
-        {code: 'type_mismatch', detail: {expected: 'Dirección', actual: 'Color'}},
+        {code: 'call_type_mismatch', detail: {name: 'Mover', expected: 'Dirección', actual: 'Color'}},
         {row: 1, column: 10}
     );
 });
 
 utils.testProgramFailure('wrong-types/put-north.gbs', function (t, error) {
     utils.checkError(t, error,
-        {code: 'type_mismatch', detail: {expected: 'Color', actual: 'Dirección'}},
+        {code: 'call_type_mismatch', detail: {name: 'Poner', expected: 'Color', actual: 'Dirección'}},
         {row: 5, column: 10}
     );
 });
 
 utils.testProgramFailure('wrong-types/numberofstones-east.gbs', function (t, error) {
     utils.checkError(t, error,
-        {code: 'type_mismatch', detail: {expected: 'Color', actual: 'Dirección'}},
+        {code: 'call_type_mismatch', detail: {name: 'nroBolitas', expected: 'Color', actual: 'Dirección'}},
         {row: 1, column: 20}
     );
 });
 
 utils.testProgramFailure('wrong-types/opposite-red.gbs', function (t, error) {
     utils.checkError(t, error,
-        {code: 'type_mismatch', detail: {expected: 'Dirección', actual: 'Color'}},
+        {code: 'call_type_mismatch', detail: {name: 'opuesto', expected: 'Dirección', actual: 'Color'}},
         {row: 1, column: 17}
     );
 });
