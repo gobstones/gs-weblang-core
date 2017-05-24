@@ -210,3 +210,17 @@ utils.testProgramFailure('already-defined-function.gbs', function (t, error) {
         {row: 7, column: 10}
     );
 });
+
+utils.testProgramFailure('incomplete-parameter-list.gbs', function (t, error) {
+    utils.checkError(t, error,
+        {code: 'expecting_parameter_name'},
+        {row: 4, column: 19}
+    );
+});
+
+utils.testProgramFailure('invalid-parameter-name.gbs', function (t, error) {
+    utils.checkError(t, error,
+        {code: 'invalid_parameter_name', detail: {value: 2}},
+        {row: 4, column: 19}
+    );
+});
