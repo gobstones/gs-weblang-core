@@ -1,3 +1,4 @@
+var config = require('../lib/config');
 var utils = require('./_utils');
 
 // INTERPRETER ERRORS:
@@ -268,5 +269,13 @@ utils.testProgramFailure('not-a-function-or-procedure.gbs', function (t, error) 
     utils.checkError(t, error,
         {code: 'not_a_function_or_procedure', detail: {name: 2}},
         {row: 1, column: 5}
+    );
+});
+
+config.LOOP_TIMEOUT = 100;
+utils.testProgramFailure('infinite-loop.gbs', function (t, error) {
+    utils.checkError(t, error,
+        {code: 'infinite_loop', detail: {timeout: 0.1}},
+        {row: 1, column: 11}
     );
 });
