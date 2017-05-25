@@ -263,3 +263,10 @@ utils.testProgramFailure('unexpected-token.gbs', function (t, error) {
         {row: 1, column: 12}
     );
 });
+
+utils.testProgramFailure('not-a-function-or-procedure.gbs', function (t, error) {
+    utils.checkError(t, error,
+        {code: 'not_a_function_or_procedure', detail: {name: 2}},
+        {row: 1, column: 5}
+    );
+});
