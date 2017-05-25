@@ -1,0 +1,10 @@
+program {
+}
+
+function hola() {
+    return(2)
+}
+
+function hola() {
+    return(3)
+}

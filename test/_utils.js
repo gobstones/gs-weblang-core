@@ -1,5 +1,6 @@
 var fs = require('fs');
 var test = require('ava');
+var _ = require('lodash');
 var Context = require('../lib/model/execution-context');
 var g = require('../lib/gbs');
 
@@ -63,6 +64,26 @@ utils.testProgramFailure = function (fileName, asserts) {
 
         asserts(t, reason);
     });
+};
+
+var messageIsOk = function (t, error, checkArgumentsPresence) {
+    if (checkArgumentsPresence === undefined) {
+        checkArgumentsPresence = true;
+    }
+
+    if (checkArgumentsPresence && error.reason.detail) {
+        t.is(_.values(error.reason.detail).every(function (value) {
+            return _.includes(error.message, value);
+        }), true);
+    } else {
+        t.is(error.message !== '', true);
+    }
+};
+
+utils.checkError = function (t, error, reason, rangeStart, checkArgumentsPresence) {
+    messageIsOk(t, error, checkArgumentsPresence);
+    t.deepEqual(error.reason, reason);
+    t.deepEqual(error.on.range.start, rangeStart);
 };
 
 module.exports = utils;
