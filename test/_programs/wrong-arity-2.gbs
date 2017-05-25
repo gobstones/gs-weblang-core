@@ -1,0 +1,6 @@
+procedure Algo(arg1, arg2) {
+}
+
+program {
+    Algo(Rojo)
+}

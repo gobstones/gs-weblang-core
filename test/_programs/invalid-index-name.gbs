@@ -1,0 +1,6 @@
+program {
+    foreach 9 in [1,3,4] {
+         repeat(i) {Poner(Verde)}
+         Mover(Este)
+    }
+}

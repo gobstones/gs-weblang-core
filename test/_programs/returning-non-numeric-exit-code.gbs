@@ -1,5 +1,0 @@
-program {
-    Poner(Rojo)
-
-    return(Norte)
-}

@@ -23,52 +23,44 @@ utils.testProgramFailure('unknown-function.gbs', function (t, error) {
     );
 });
 
-utils.testProgramFailure('returning-non-numeric-exit-code.gbs', function (t, error) {
-    utils.checkError(t, error,
-        {code: 'non_numeric_exit_code', detail: {value: [0, 1]}},
-        {row: 3, column: 11},
-        false
-    );
-});
-
 utils.testProgramFailure('wrong-types/basic-move-red.gbs', function (t, error) {
     utils.checkError(t, error,
-        {code: 'type_mismatch', detail: {expected: 'Dirección', actual: 'Color'}},
+        {code: 'call_type_mismatch', detail: {name: 'Mover', expected: 'Dirección', actual: 'Color'}},
         {row: 1, column: 10}
     );
 });
 
 utils.testProgramFailure('wrong-types/move-red.gbs', function (t, error) {
     utils.checkError(t, error,
-        {code: 'type_mismatch', detail: {expected: 'Dirección', actual: 'Color'}},
+        {code: 'call_type_mismatch', detail: {name: 'Mover', expected: 'Dirección', actual: 'Color'}},
         {row: 5, column: 10}
     );
 });
 
 utils.testProgramFailure('wrong-types/move-red-by-parameter.gbs', function (t, error) {
     utils.checkError(t, error,
-        {code: 'type_mismatch', detail: {expected: 'Dirección', actual: 'Color'}},
+        {code: 'call_type_mismatch', detail: {name: 'Mover', expected: 'Dirección', actual: 'Color'}},
         {row: 1, column: 10}
     );
 });
 
 utils.testProgramFailure('wrong-types/put-north.gbs', function (t, error) {
     utils.checkError(t, error,
-        {code: 'type_mismatch', detail: {expected: 'Color', actual: 'Dirección'}},
+        {code: 'call_type_mismatch', detail: {name: 'Poner', expected: 'Color', actual: 'Dirección'}},
         {row: 5, column: 10}
     );
 });
 
 utils.testProgramFailure('wrong-types/numberofstones-east.gbs', function (t, error) {
     utils.checkError(t, error,
-        {code: 'type_mismatch', detail: {expected: 'Color', actual: 'Dirección'}},
+        {code: 'call_type_mismatch', detail: {name: 'nroBolitas', expected: 'Color', actual: 'Dirección'}},
         {row: 1, column: 20}
     );
 });
 
 utils.testProgramFailure('wrong-types/opposite-red.gbs', function (t, error) {
     utils.checkError(t, error,
-        {code: 'type_mismatch', detail: {expected: 'Dirección', actual: 'Color'}},
+        {code: 'call_type_mismatch', detail: {name: 'opuesto', expected: 'Dirección', actual: 'Color'}},
         {row: 1, column: 17}
     );
 });
@@ -87,18 +79,38 @@ utils.testProgramFailure('wrong-types/inconsistent-assignment-2.gbs', function (
     );
 });
 
-utils.testProgramFailure('wrong-types/wrong-arity.gbs', function (t, error) {
-    utils.checkError(t, error,
-        {code: 'wrong_arity', detail: {expected: 2, actual: 1}},
-        {row: 6, column: 5}
-    );
-});
-
 utils.testProgramFailure('wrong-types/inconsistent-switch-branch-types.gbs', function (t, error) {
     utils.checkError(t, error,
         {code: 'type_mismatch', detail: {expected: 'Color', actual: 'Número'}},
         {row: 2, column: 9}
     );
+});
+
+utils.testProgramFailure('wrong-arity-1.gbs', function (t, error) {
+    utils.checkError(t, error,
+        {code: 'wrong_arity', detail: {nameType: 'procedure', name: 'Algo', expected: 1, actual: 2}},
+        {row: 4, column: 5},
+        false
+    );
+    t.is(error.message, 'El procedimiento Algo esperaba 1 argumento y se encontraron 2.');
+});
+
+utils.testProgramFailure('wrong-arity-2.gbs', function (t, error) {
+    utils.checkError(t, error,
+        {code: 'wrong_arity', detail: {nameType: 'procedure', name: 'Algo', expected: 2, actual: 1}},
+        {row: 4, column: 5},
+        false
+    );
+    t.is(error.message, 'El procedimiento Algo esperaba 2 argumentos y se encontró 1.');
+});
+
+utils.testProgramFailure('wrong-arity-3.gbs', function (t, error) {
+    utils.checkError(t, error,
+        {code: 'wrong_arity', detail: {nameType: 'function', name: 'algo', expected: 2, actual: 1}},
+        {row: 5, column: 10},
+        false
+    );
+    t.is(error.message, 'La función algo esperaba 2 argumentos y se encontró 1.');
 });
 
 var testUnexpectedConstant = function (fileName) {
@@ -164,7 +176,7 @@ utils.testProgramFailure('user-boom/with-no-closing-quote.gbs', function (t, err
 
 utils.testProgramFailure('interactive/wrong-keys.gbs', function (t, error) {
     utils.checkError(t, error,
-        {code: 'invalid_key', detail: {n: 2}},
+        {code: 'invalid_key', detail: {key: 'TECLA_CUALQUIERA'}},
         {row: 2, column: 5}
     );
 });
@@ -197,9 +209,64 @@ utils.testProgramFailure('interactive/big-timeout.gbs', function (t, error) {
     );
 });
 
-utils.testProgramFailure('already-defined.gbs', function (t, error) {
+utils.testProgramFailure('already-defined-procedure.gbs', function (t, error) {
     utils.checkError(t, error,
-        {code: 'existing_name', detail: {name: 'Hola'}},
+        {code: 'existing_procedure', detail: {name: 'Hola'}},
         {row: 7, column: 11}
+    );
+});
+
+utils.testProgramFailure('already-defined-function.gbs', function (t, error) {
+    utils.checkError(t, error,
+        {code: 'existing_function', detail: {name: 'hola'}},
+        {row: 7, column: 10}
+    );
+});
+
+utils.testProgramFailure('incomplete-parameter-list.gbs', function (t, error) {
+    utils.checkError(t, error,
+        {code: 'expecting_parameter_name'},
+        {row: 4, column: 19}
+    );
+});
+
+utils.testProgramFailure('invalid-parameter-name.gbs', function (t, error) {
+    utils.checkError(t, error,
+        {code: 'invalid_name', detail: {nameType: 'parameter', value: 2}},
+        {row: 4, column: 19},
+        false
+    );
+    t.is(error.message, '2 no es un nombre válido para un parámetro.');
+});
+
+utils.testProgramFailure('invalid-index-name.gbs', function (t, error) {
+    utils.checkError(t, error,
+        {code: 'invalid_name', detail: {nameType: 'index', value: 9}},
+        {row: 1, column: 13},
+        false
+    );
+    t.is(error.message, '9 no es un nombre válido para un índice.');
+});
+
+utils.testProgramFailure('invalid-variable-name.gbs', function (t, error) {
+    utils.checkError(t, error,
+        {code: 'invalid_name', detail: {nameType: 'variable', value: 3}},
+        {row: 1, column: 5},
+        false
+    );
+    t.is(error.message, '3 no es un nombre válido para una variable.');
+});
+
+utils.testProgramFailure('unexpected-token.gbs', function (t, error) {
+    utils.checkError(t, error,
+        {code: 'unexpected_token', detail: {token: '%'}},
+        {row: 1, column: 12}
+    );
+});
+
+utils.testProgramFailure('not-a-function-or-procedure.gbs', function (t, error) {
+    utils.checkError(t, error,
+        {code: 'not_a_function_or_procedure', detail: {name: 2}},
+        {row: 1, column: 5}
     );
 });
