@@ -16,6 +16,10 @@ utils.testProgram('basic-functions.gbs', function (t, context) {
     t.is(context.get('a'), 2);
 });
 
+utils.testProgram('comments.gbs', function () {
+    // it works
+});
+
 utils.testProgram('step-by-step.gbs', function (t, context) {
     var checkHeader = function (board, x, y) {
         t.is(board.x, x);

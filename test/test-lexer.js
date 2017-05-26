@@ -12,6 +12,11 @@ test('Lexer recognizes numbers', function (t) {
     t.is(lexer.next().type, 'number');
 });
 
+test('Lexer recognizes strings', function (t) {
+    lexer.input('"hola"');
+    t.is(lexer.next().type, 'string');
+});
+
 test('Lexer recognizes operators', function (t) {
     lexer.input('+');
     t.is(lexer.next().type, 'operator');

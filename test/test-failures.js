@@ -114,6 +114,24 @@ utils.testProgramFailure('wrong-arity-3.gbs', function (t, error) {
     t.is(error.message, 'La función algo esperaba 2 argumentos y se encontró 1.');
 });
 
+utils.testProgramFailure('wrong-arity-primitive-procedure.gbs', function (t, error) {
+    utils.checkError(t, error,
+        {code: 'wrong_arity', detail: {nameType: 'procedure', name: 'Poner', expected: 1, actual: 0}},
+        {row: 1, column: 10},
+        false
+    );
+    t.is(error.message, 'El procedimiento Poner esperaba 1 argumento y se encontraron 0.');
+});
+
+utils.testProgramFailure('wrong-arity-primitive-function.gbs', function (t, error) {
+    utils.checkError(t, error,
+        {code: 'wrong_arity', detail: {nameType: 'function', name: 'hayBolitas', expected: 1, actual: 0}},
+        {row: 1, column: 20},
+        false
+    );
+    t.is(error.message, 'La función hayBolitas esperaba 1 argumento y se encontraron 0.');
+});
+
 var testUnexpectedConstant = function (fileName) {
     utils.testProgramFailure(fileName, function (t, error) {
         utils.checkError(t, error,
@@ -141,6 +159,20 @@ utils.testProgramFailure('unknown-literal-in-any-procedure.gbs', function (t, er
     );
 });
 
+utils.testProgramFailure('using-string-1.gbs', function (t, error) {
+    utils.checkError(t, error,
+        {code: 'strings_only_allowed_in_boom'},
+        {row: 1, column: 10}
+    );
+});
+
+utils.testProgramFailure('using-string-2.gbs', function (t, error) {
+    utils.checkError(t, error,
+        {code: 'strings_only_allowed_in_boom'},
+        {row: 1, column: 9}
+    );
+});
+
 // ---
 
 // BOOM:
@@ -150,28 +182,40 @@ utils.testProgramFailure('user-boom/good-boom.gbs', function (t, error) {
     t.is(error.reason.code, 'boom_called');
 });
 
+utils.testProgramFailure('user-boom/good-boom-empty.gbs', function (t, error) {
+    t.is(error.message, '');
+    t.is(error.reason.code, 'boom_called');
+});
+
+utils.testProgramFailure('user-boom/good-boom-point.gbs', function (t, error) {
+    t.is(error.message, '.');
+    t.is(error.reason.code, 'boom_called');
+});
+
 // ---
 
 // PARSER ERRORS:
 
 utils.testProgramFailure('user-boom/without-parameters.gbs', function (t, error) {
     utils.checkError(t, error,
-        {code: 'expecting_error_message'},
-        {row: 1, column: 10}
+        {code: 'wrong_arity', detail: {nameType: 'procedure', name: 'BOOM', expected: 1, actual: 0}},
+        {row: 1, column: 9},
+        false
     );
+    t.is(error.message, 'El procedimiento BOOM esperaba 1 argumento y se encontraron 0.');
 });
 
 utils.testProgramFailure('user-boom/with-color-as-parameter.gbs', function (t, error) {
     utils.checkError(t, error,
-        {code: 'expecting_error_message'},
-        {row: 1, column: 10}
+        {code: 'call_type_mismatch', detail: {name: 'BOOM', expected: 'Mensaje de error entre comillas', actual: 'Color'}},
+        {row: 1, column: 9}
     );
 });
 
 utils.testProgramFailure('user-boom/with-no-closing-quote.gbs', function (t, error) {
     utils.checkError(t, error,
         {code: 'expecting_final_quotes'},
-        {row: 1, column: 11}
+        {row: 1, column: 9}
     );
 });
 
