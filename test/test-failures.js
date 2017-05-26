@@ -156,22 +156,24 @@ utils.testProgramFailure('user-boom/good-boom.gbs', function (t, error) {
 
 utils.testProgramFailure('user-boom/without-parameters.gbs', function (t, error) {
     utils.checkError(t, error,
-        {code: 'expecting_error_message'},
-        {row: 1, column: 10}
+        {code: 'wrong_arity', detail: {nameType: 'procedure', name: 'BOOM', expected: 1, actual: 0}},
+        {row: 1, column: 9},
+        false
     );
+    t.is(error.message, 'El procedimiento BOOM esperaba 1 argumento y se encontraron 0.');
 });
 
 utils.testProgramFailure('user-boom/with-color-as-parameter.gbs', function (t, error) {
     utils.checkError(t, error,
-        {code: 'expecting_error_message'},
-        {row: 1, column: 10}
+        {code: 'call_type_mismatch', detail: {name: 'BOOM', expected: 'Mensaje de error entre comillas', actual: 'Color'}},
+        {row: 1, column: 9}
     );
 });
 
 utils.testProgramFailure('user-boom/with-no-closing-quote.gbs', function (t, error) {
     utils.checkError(t, error,
         {code: 'expecting_final_quotes'},
-        {row: 1, column: 11}
+        {row: 1, column: 9}
     );
 });
 
