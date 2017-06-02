@@ -358,3 +358,11 @@ utils.testProgramFailure('function-name-should-start-with-lowercase.gbs', functi
         {row: 4, column: 10}
     );
 });
+
+utils.testProgramFailure('procedure-name-should-start-with-uppercase.gbs', function (t, error) {
+    utils.checkError(t, error,
+        {code: 'procedure_name_should_start_with_uppercase', detail: {name: 'Ae'}},
+        {row: 4, column: 10}
+    );
+});
+
