@@ -1,0 +1,4 @@
+program {
+    s := opuesto(Oeste)
+    Mover(s)
+}
