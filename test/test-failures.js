@@ -323,3 +323,10 @@ utils.testProgramFailure('infinite-loop.gbs', function (t, error) {
         {row: 1, column: 11}
     );
 });
+
+utils.testProgramFailure('bad-expression-statement.gbs', function (t, error) {
+    utils.checkError(t, error,
+        {code: 'bad_expression_statement'},
+        {row: 2, column: 5}
+    );
+});

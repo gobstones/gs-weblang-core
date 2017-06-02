@@ -83,6 +83,9 @@ var messageIsOk = function (t, error, checkArgumentsPresence) {
 utils.checkError = function (t, error, reason, rangeStart, checkArgumentsPresence) {
     messageIsOk(t, error, checkArgumentsPresence);
     t.deepEqual(error.reason, reason);
+    if (!error.on.range) {
+        console.log('!!! ERROR WITHOUT RANGE', error);
+    }
     t.deepEqual(error.on.range.start, rangeStart);
 };
 
