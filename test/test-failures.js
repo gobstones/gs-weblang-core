@@ -330,3 +330,31 @@ utils.testProgramFailure('bad-expression-statement.gbs', function (t, error) {
         {row: 2, column: 5}
     );
 });
+
+utils.testProgramFailure('expecting-function-name.gbs', function (t, error) {
+    utils.checkError(t, error,
+        {code: 'expecting_function_name'},
+        {row: 4, column: 10}
+    );
+});
+
+utils.testProgramFailure('expecting-procedure-name.gbs', function (t, error) {
+    utils.checkError(t, error,
+        {code: 'expecting_procedure_name'},
+        {row: 4, column: 11}
+    );
+});
+
+utils.testProgramFailure('function-must-end-with-return.gbs', function (t, error) {
+    utils.checkError(t, error,
+        {code: 'function_must_end_with_return', detail: {name: 'a'}},
+        {row: 4, column: 10}
+    );
+});
+
+utils.testProgramFailure('function-name-should-start-with-lowercase.gbs', function (t, error) {
+    utils.checkError(t, error,
+        {code: 'function_name_should_start_with_lowercase', detail: {name: 'Ae'}},
+        {row: 4, column: 10}
+    );
+});
