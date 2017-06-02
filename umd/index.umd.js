@@ -18717,14 +18717,17 @@ return /******/ (function(modules) { // webpackBootstrap
 	var TOKEN_NAMES = __webpack_require__(5);
 	
 	// TODO: Idealmente esto no tendria que existir.
-	// Las operaciones de `binary-operations` deben wrappear los resultados en su tipo correspondiente.
+	// Las operaciones de `binary-operations` y `primitive-functions` deben wrappear los resultados en su tipo correspondiente.
 	
 	module.exports = function (value) {
 	    return _.isNumber(value) ?
 	        {type: TOKEN_NAMES.NUMBER, value: value} :
 	        (_.isBoolean(value) ?
 	            {type: TOKEN_NAMES.BOOLEAN, value: value} :
-	            value
+	            (_.isArray(value) ?
+	                {type: TOKEN_NAMES.DIRECTION, value: value} :
+	                value
+	            )
 	        );
 	};
 
@@ -18872,6 +18875,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	
 	    node.Opposite.prototype.eval = function (context) {
 	        var value = getValue(node, nameInfo(this), this.token, this.parameters, TOKEN_NAMES.DIRECTION, {context: context});
+	
 	        return value.map(function (x) {
 	            return -x;
 	        });
