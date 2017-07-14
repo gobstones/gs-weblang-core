@@ -34,13 +34,13 @@ utils.testProgram('step-by-step.gbs', function (t, context) {
     var snapshots = context.board().snapshots;
     t.is(snapshots.length, 3);
 
-    checkHeader(snapshots[0].board, 0, 0);
+    checkHeader(snapshots[0].board, 0, 1);
     t.deepEqual(snapshots[0].names, ['program']);
 
-    checkHeader(snapshots[1].board, 0, 1);
+    checkHeader(snapshots[1].board, 1, 1);
     t.deepEqual(snapshots[1].names.map(onlyName), ['program', 'OtroContexto']);
 
-    checkHeader(snapshots[2].board, 1, 1);
+    checkHeader(snapshots[2].board, 1, 0);
     t.deepEqual(snapshots[2].names, ['program']);
 });
 
